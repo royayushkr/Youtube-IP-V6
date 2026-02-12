@@ -14,36 +14,6 @@ from googleapiclient.errors import HttpError
 CATEGORY_NAME = "fitness"  #change accordingly
 
 CHANNEL_HANDLES = [
-    "@FightmasterYoga",
-    "@JeremyEthier",
-    "@OmarIsuf",
-    "@MarkBellSlingShot",
-    "@BadYogi",
-    "@KinoYoga",
-    "@WillTennyson",
-    "@TravisEliot",
-    "@fiveparksyoga",
-    "@YogaWithBird",
-    "@charliefollows",
-    "@muscleandmotion",
-    "@AasgaardCo",
-    "@athrall7",
-    "@RedefiningStrengthOC",
-    "@MoveWithNicole",
-    "@YogaWithBriohny",
-    "@CandaceCabreraYoga",
-    "@HeartAlchemyMichelle",
-    "@bodybuildingcom",
-    "@ActionJacquelyn",
-    "@BullyJuice",
-    "@walkathome",
-    "@FitnessFAQs",
-    "@daisykeech",
-    "@LillySabri",
-    "@HASfit",
-    "@LucyWyndhamRead",
-    "@ThomasDeLauerOfficial",
-    "@EddieHallStrongman",
     "@LarryWheels",
     "@NikkiBlacketter",
     "@CarlyRowena",
@@ -80,7 +50,7 @@ CHANNEL_HANDLES = [
 CHANNELS_TARGET = 30
 VIDEOS_PER_CHANNEL = 50
 
-OUTPUT_CSV = os.path.join("scripts", f"{CATEGORY_NAME}_channels_videos.csv")
+OUTPUT_CSV = os.path.join("data", "raw", f"{CATEGORY_NAME}_channels_videos.csv")
 
 # ============================================================
 # SYSTEM CONFIG (do not edit)
