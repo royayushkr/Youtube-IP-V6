@@ -5,6 +5,8 @@ from typing import List, Optional
 
 import requests
 
+from src.utils.api_keys import get_primary_provider_key
+
 
 @dataclass
 class GeneratedImage:
@@ -134,9 +136,12 @@ class ThumbnailGenerator:
 
 
 def get_api_key(provider: str) -> Optional[str]:
-    provider = provider.lower().strip()
-    if provider == "gemini":
+    provider_name = provider.lower().strip()
+    pooled_key = get_primary_provider_key(provider_name)
+    if pooled_key:
+        return pooled_key
+    if provider_name == "gemini":
         return os.getenv("GEMINI_API_KEY")
-    if provider == "openai":
+    if provider_name == "openai":
         return os.getenv("OPENAI_API_KEY")
     return None

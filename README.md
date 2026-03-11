@@ -28,9 +28,9 @@ YouTube IP V3 is a Streamlit application for channel benchmarking, content analy
 ### Prerequisites
 
 - Python 3.10+
-- `YOUTUBE_API_KEY` for live channel analysis
-- `GEMINI_API_KEY` for Gemini generation
-- `OPENAI_API_KEY` if you want OpenAI fallback text/image generation
+- `YOUTUBE_API_KEYS` or `YOUTUBE_API_KEY` for live channel analysis
+- `GEMINI_API_KEYS` or `GEMINI_API_KEY` for Gemini generation
+- `OPENAI_API_KEYS` or `OPENAI_API_KEY` if you want OpenAI / ChatGPT fallback text and image generation
 
 ### Install
 
@@ -48,11 +48,19 @@ cp .env.example .env
 
 Populate `.env` with:
 
-- `YOUTUBE_API_KEY`
-- `GEMINI_API_KEY`
-- `OPENAI_API_KEY`
+- `YOUTUBE_API_KEYS`
+- `GEMINI_API_KEYS`
+- `OPENAI_API_KEYS`
 
-`OPENAI_API_KEY` is optional if you only use Gemini-backed features.
+Comma-separated lists are supported for local development, for example:
+
+```bash
+YOUTUBE_API_KEYS=key_1,key_2
+GEMINI_API_KEYS=key_1,key_2
+OPENAI_API_KEYS=key_1,key_2
+```
+
+Single-key fallbacks also work with `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, and `OPENAI_API_KEY`.
 
 ### Run The App
 
@@ -84,7 +92,7 @@ Uses dataset-backed performance patterns to suggest keyword angles, title length
 
 Located in `dashboard/views/ytuber.py`.
 
-Uses live YouTube API pulls for a single channel and exposes:
+Uses live YouTube API pulls for a single channel, rotates across the configured background API-key pools, and exposes:
 
 - Overview
 - Channel Audit
@@ -110,20 +118,21 @@ This repo is ready to deploy from GitHub to Streamlit Community Cloud.
 Add these in the Streamlit app Secrets panel:
 
 ```toml
-YOUTUBE_API_KEY = "your_youtube_key"
-GEMINI_API_KEY = "your_gemini_key"
-OPENAI_API_KEY = "your_openai_key"
+YOUTUBE_API_KEYS = ["your_youtube_key_1", "your_youtube_key_2"]
+GEMINI_API_KEYS = ["your_gemini_key_1", "your_gemini_key_2"]
+OPENAI_API_KEYS = ["your_openai_key_1", "your_openai_key_2"]
 ```
 
-You can also copy `.streamlit/secrets.toml.example` for local reference.
+You can also use single-key fallbacks with `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, and `OPENAI_API_KEY`.
+You can copy `.streamlit/secrets.toml.example` for local reference.
 
 ### Deployment Notes
 
 - `streamlit_app.py` is the recommended root entrypoint for deployment.
 - `dashboard/app.py` remains the main application module.
 - Channel Analysis and Recommendations work from the committed datasets.
-- The Ytuber page requires a valid `YOUTUBE_API_KEY` to pull live channel data.
-- Thumbnail and text generation features require Gemini and/or OpenAI credentials.
+- The Ytuber page uses the configured key pools to serve live channel data without exposing raw keys in the UI.
+- Thumbnail and text generation features use the configured Gemini and/or OpenAI key pools.
 
 ## Supporting Files
 

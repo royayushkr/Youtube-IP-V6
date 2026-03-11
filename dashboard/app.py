@@ -327,18 +327,18 @@ else:
 
         ### Secrets
         ```toml
-        YOUTUBE_API_KEY = "your_youtube_key"
-        GEMINI_API_KEY = "your_gemini_key"
-        OPENAI_API_KEY = "your_openai_key"
+        YOUTUBE_API_KEYS = ["youtube_key_1", "youtube_key_2"]
+        GEMINI_API_KEYS = ["gemini_key_1", "gemini_key_2"]
+        OPENAI_API_KEYS = ["openai_key_1", "openai_key_2"]
         ```
 
-        `OPENAI_API_KEY` is optional if you only plan to use Gemini-backed generation.
+        Single-key fallbacks also work with `YOUTUBE_API_KEY`, `GEMINI_API_KEY`, and `OPENAI_API_KEY`.
 
         ### Notes
         - `dashboard/app.py` remains the main application module.
         - `streamlit_app.py` is the root-level deployment entrypoint for Streamlit Cloud.
         - Channel Analysis and Recommendations use the committed CSV datasets under `data/youtube api data/`.
-        - The Ytuber suite uses live API calls and requires `YOUTUBE_API_KEY`.
+        - The Ytuber suite uses live API calls and rotates across the configured key pools.
 
         ### Alternate Entrypoint
         ```bash

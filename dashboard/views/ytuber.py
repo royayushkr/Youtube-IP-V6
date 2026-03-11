@@ -3,6 +3,7 @@ import re
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
+from html import escape
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -30,6 +31,7 @@ from dashboard.components.visualizations import (
     styled_keyword_chips,
 )
 from src.llm_integration.thumbnail_generator import ThumbnailGenerator
+from src.utils.api_keys import get_provider_key_count, run_with_provider_keys
 
 
 DATASET_PATH = os.path.join("data", "youtube api data", "research_science_channels_videos.csv")
@@ -42,6 +44,61 @@ STOPWORDS = {
 POWER_WORDS = {
     "secret", "ultimate", "proven", "easy", "fast", "best", "shocking", "truth", "mistake", "science",
     "future", "breakthrough", "insane", "new", "critical", "warning", "guide", "explained", "hidden", "top",
+}
+WORKSPACE_MODULES = [
+    "Overview",
+    "Channel Audit",
+    "Keyword Intel",
+    "Title & SEO Lab",
+    "Competitor Benchmark",
+    "Trend Radar",
+    "Content Planner",
+    "AI Studio",
+]
+AI_STUDIO_TASKS = [
+    "Full Pack (titles + descriptions + scripts + thumbnail concepts)",
+    "Video Ideas",
+    "Niche Expansion",
+    "Titles Only",
+    "Descriptions Only",
+    "Scripts Only",
+    "Hooks + CTAs",
+    "Shorts Ideas",
+    "Thumbnail Concepts",
+]
+QUICK_ACTIONS = [
+    "Audit my channel",
+    "Find niche",
+    "New thumbnail",
+    "Find keywords",
+    "Video ideas",
+    "Write script",
+    "Make clips",
+    "AI Shorts",
+]
+QUICK_ACTION_TO_MODULE = {
+    "Audit my channel": "Channel Audit",
+    "Find niche": "Keyword Intel",
+    "New thumbnail": "AI Studio",
+    "Find keywords": "Keyword Intel",
+    "Video ideas": "AI Studio",
+    "Write script": "AI Studio",
+    "Make clips": "AI Studio",
+    "AI Shorts": "AI Studio",
+}
+QUICK_ACTION_TO_TASK = {
+    "Audit my channel": "Full Pack (titles + descriptions + scripts + thumbnail concepts)",
+    "Find niche": "Niche Expansion",
+    "New thumbnail": "Thumbnail Concepts",
+    "Find keywords": "Titles Only",
+    "Video ideas": "Video Ideas",
+    "Write script": "Scripts Only",
+    "Make clips": "Hooks + CTAs",
+    "AI Shorts": "Shorts Ideas",
+}
+PROVIDER_LABELS = {
+    "gemini": "Gemini",
+    "openai": "OpenAI / ChatGPT",
 }
 
 
@@ -62,6 +119,228 @@ def _join_list(x: Optional[List[str]]) -> str:
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _extract_channel_query(prompt_text: str) -> str:
+    text = prompt_text.strip()
+    if not text:
+        return ""
+
+    match = re.search(r"(UC[\w-]{20,}|@[A-Za-z0-9._-]+)", text)
+    if match:
+        return match.group(1)
+    return text
+
+
+def _goal_from_prompt(prompt_text: str) -> str:
+    cleaned = re.sub(r"(UC[\w-]{20,}|@[A-Za-z0-9._-]+)", "", prompt_text)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" ,.-")
+    return cleaned
+
+
+def _inject_ytuber_css() -> None:
+    st.markdown(
+        """
+        <style>
+        .ytuber-hero {
+            text-align: center;
+            max-width: 980px;
+            margin: 0 auto 1.25rem;
+        }
+        .ytuber-kicker {
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #7D8AB1;
+            margin-bottom: 0.45rem;
+        }
+        .ytuber-title {
+            font-size: clamp(36px, 5vw, 58px);
+            line-height: 1.05;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 0.45rem;
+        }
+        .ytuber-subtitle {
+            font-size: 15px;
+            color: #A8B0CC;
+            max-width: 740px;
+            margin: 0 auto;
+        }
+        .ytuber-command-card {
+            max-width: 1040px;
+            margin: 0 auto 1.25rem;
+            padding: 1.25rem 1.35rem 1.1rem;
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(20,23,42,0.95) 0%, rgba(11,13,28,0.96) 100%);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+        }
+        .ytuber-status-card {
+            min-height: 96px;
+        }
+        .ytuber-status-label {
+            font-size: 11px;
+            color: #7D8AB1;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+        }
+        .ytuber-status-value {
+            font-size: 24px;
+            color: #FFFFFF;
+            font-weight: 700;
+        }
+        .ytuber-status-detail {
+            font-size: 12px;
+            color: #A8B0CC;
+            margin-top: 0.15rem;
+        }
+        .ytuber-detected {
+            font-size: 12px;
+            color: #A8B0CC;
+            margin-top: 0.5rem;
+        }
+        .ytuber-banner {
+            border-radius: 22px;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1rem;
+            background: radial-gradient(circle at top left, rgba(255,255,255,0.07) 0%, rgba(22,33,62,0.95) 40%, rgba(6,6,20,0.98) 100%);
+            border: 1px solid rgba(255,255,255,0.10);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+        }
+        .ytuber-banner-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 0.25rem;
+        }
+        .ytuber-banner-meta {
+            font-size: 13px;
+            color: #A8B0CC;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_connection_cards() -> Dict[str, int]:
+    provider_counts = {
+        "youtube": get_provider_key_count("youtube"),
+        "gemini": get_provider_key_count("gemini"),
+        "openai": get_provider_key_count("openai"),
+    }
+
+    cards = [
+        ("YouTube Pool", provider_counts["youtube"], "Live channel fetch and benchmarking"),
+        ("Gemini Pool", provider_counts["gemini"], "Text and image generation"),
+        ("OpenAI Pool", provider_counts["openai"], "ChatGPT text and image generation"),
+    ]
+
+    cols = st.columns(3)
+    for col, (label, count, detail) in zip(cols, cards):
+        with col:
+            st.markdown(
+                f"""
+                <div class="yt-card ytuber-status-card">
+                    <div class="ytuber-status-label">{escape(label)}</div>
+                    <div class="ytuber-status-value">{count}</div>
+                    <div class="ytuber-status-detail">{escape(detail)}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    return provider_counts
+
+
+def _is_youtube_retryable_error(exc: Exception) -> bool:
+    status = getattr(getattr(exc, "resp", None), "status", None)
+    if status in (400, 401, 403, 429, 500, 503):
+        return True
+
+    message = str(exc).lower()
+    retry_tokens = (
+        "quota",
+        "rate limit",
+        "resource exhausted",
+        "api key",
+        "403",
+        "429",
+        "500",
+        "503",
+        "backenderror",
+        "service unavailable",
+        "daily limit",
+        "forbidden",
+        "access not configured",
+    )
+    return any(token in message for token in retry_tokens)
+
+
+def _is_ai_retryable_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    retry_tokens = (
+        "quota",
+        "rate limit",
+        "resource exhausted",
+        "too many requests",
+        "insufficient_quota",
+        "api key",
+        "401",
+        "403",
+        "429",
+        "500",
+        "503",
+        "overloaded",
+    )
+    return any(token in message for token in retry_tokens)
+
+
+def _generate_text_with_provider_pool(provider: str, model: str, prompt: str) -> str:
+    provider_name = provider.lower().strip()
+    if provider_name == "gemini":
+        return run_with_provider_keys(
+            "gemini",
+            lambda key: _gemini_generate_text(key, model, prompt),
+            retryable_error=_is_ai_retryable_error,
+        )
+    if provider_name == "openai":
+        return run_with_provider_keys(
+            "openai",
+            lambda key: _openai_generate_text(key, model, prompt),
+            retryable_error=_is_ai_retryable_error,
+        )
+    raise RuntimeError(f"Unsupported text provider: {provider}")
+
+
+def _generate_images_with_provider_pool(
+    provider: str,
+    model: str,
+    *,
+    title: str,
+    context: str,
+    style: str,
+    negative_prompt: str,
+    count: int,
+) -> List[Any]:
+    provider_name = provider.lower().strip()
+    return run_with_provider_keys(
+        provider_name,
+        lambda key: ThumbnailGenerator(
+            provider=provider_name,
+            api_key=key,
+            model=model,
+        ).generate(
+            title=title,
+            context=context,
+            style=style,
+            negative_prompt=negative_prompt,
+            count=count,
+        ),
+        retryable_error=_is_ai_retryable_error,
+    )
 
 
 def _api_call_with_backoff(fn, max_retries: int = 7):
@@ -506,62 +785,80 @@ def _compute_channel_audit(df: pd.DataFrame) -> Dict[str, Any]:
 
 def _fetch_or_get_cached_channel(
     channel_query: str,
-    youtube_api_key: str,
     force_refresh: bool,
+    youtube_api_key: Optional[str] = None,
 ) -> Tuple[pd.DataFrame, str, str, str]:
     existing_df = _load_dataset()
     existing_df = _ensure_numeric_and_dates(existing_df) if not existing_df.empty else existing_df
-
-    youtube = _yt_client(youtube_api_key)
-    channel_id = _resolve_channel_id(youtube, channel_query)
     cutoff = datetime.now(timezone.utc) - timedelta(days=365)
 
-    cached = pd.DataFrame()
-    if not existing_df.empty and "channel_id" in existing_df.columns:
-        cached = existing_df[existing_df["channel_id"].astype(str) == str(channel_id)].copy()
+    def _load_with_key(api_key: str) -> Tuple[pd.DataFrame, str, str, str]:
+        youtube = _yt_client(api_key)
+        channel_id = _resolve_channel_id(youtube, channel_query)
 
-    if not cached.empty and not force_refresh:
-        cached_recent = cached[cached["video_publishedAt"] >= pd.Timestamp(cutoff)]
-        if not cached_recent.empty:
-            title = cached_recent["channel_title"].dropna().iloc[0] if "channel_title" in cached_recent.columns else channel_id
-            return cached_recent, "dataset_cache", channel_id, title
+        cached = pd.DataFrame()
+        if not existing_df.empty and "channel_id" in existing_df.columns:
+            cached = existing_df[existing_df["channel_id"].astype(str) == str(channel_id)].copy()
 
-    channel = _fetch_channel_details(youtube, channel_id)
-    uploads_pid = _safe_get(channel, ["contentDetails", "relatedPlaylists", "uploads"], "")
-    if not uploads_pid:
-        raise RuntimeError("Channel uploads playlist not found.")
+        if not cached.empty and not force_refresh:
+            cached_recent = cached[cached["video_publishedAt"] >= pd.Timestamp(cutoff)]
+            if not cached_recent.empty:
+                title = (
+                    cached_recent["channel_title"].dropna().iloc[0]
+                    if "channel_title" in cached_recent.columns
+                    else channel_id
+                )
+                return cached_recent, "dataset_cache", channel_id, title
 
-    video_ids = _fetch_recent_video_ids(youtube, uploads_pid, cutoff, max_videos=600)
-    if not video_ids:
-        if not cached.empty:
-            title = cached["channel_title"].dropna().iloc[0] if "channel_title" in cached.columns else channel_id
-            return cached, "dataset_cache", channel_id, title
-        raise RuntimeError("No videos found in last 1 year for this channel.")
+        channel = _fetch_channel_details(youtube, channel_id)
+        uploads_pid = _safe_get(channel, ["contentDetails", "relatedPlaylists", "uploads"], "")
+        if not uploads_pid:
+            raise RuntimeError("Channel uploads playlist not found.")
 
-    videos = _fetch_videos_details(youtube, video_ids)
-    ch = _channel_fields(channel, channel_query)
-    rows = []
-    for v in videos:
-        vid = str(v.get("id", "")).strip()
-        if not vid:
-            continue
-        rows.append(_video_row(v, ch))
+        video_ids = _fetch_recent_video_ids(youtube, uploads_pid, cutoff, max_videos=600)
+        if not video_ids:
+            if not cached.empty:
+                title = (
+                    cached["channel_title"].dropna().iloc[0]
+                    if "channel_title" in cached.columns
+                    else channel_id
+                )
+                return cached, "dataset_cache", channel_id, title
+            raise RuntimeError("No videos found in last 1 year for this channel.")
 
-    new_df = pd.DataFrame(rows)
-    if new_df.empty:
-        raise RuntimeError("API returned no usable video rows.")
+        videos = _fetch_videos_details(youtube, video_ids)
+        ch = _channel_fields(channel, channel_query)
+        rows = []
+        for v in videos:
+            vid = str(v.get("id", "")).strip()
+            if not vid:
+                continue
+            rows.append(_video_row(v, ch))
 
-    if not existing_df.empty and "video_id" in existing_df.columns:
-        existing_ids = set(existing_df["video_id"].dropna().astype(str).tolist())
-        new_df = new_df[~new_df["video_id"].astype(str).isin(existing_ids)]
+        new_df = pd.DataFrame(rows)
+        if new_df.empty:
+            raise RuntimeError("API returned no usable video rows.")
 
-    _append_rows_to_dataset(new_df, _load_dataset())
+        if not existing_df.empty and "video_id" in existing_df.columns:
+            existing_ids = set(existing_df["video_id"].dropna().astype(str).tolist())
+            new_df = new_df[~new_df["video_id"].astype(str).isin(existing_ids)]
 
-    full = _ensure_numeric_and_dates(_load_dataset())
-    channel_df = full[full["channel_id"].astype(str) == str(channel_id)].copy()
-    recent_df = channel_df[channel_df["video_publishedAt"] >= pd.Timestamp(cutoff)]
-    title = _safe_get(channel, ["snippet", "title"], channel_id)
-    return recent_df if not recent_df.empty else channel_df, "youtube_api", channel_id, str(title)
+        _append_rows_to_dataset(new_df, _load_dataset())
+
+        full = _ensure_numeric_and_dates(_load_dataset())
+        channel_df = full[full["channel_id"].astype(str) == str(channel_id)].copy()
+        recent_df = channel_df[channel_df["video_publishedAt"] >= pd.Timestamp(cutoff)]
+        title = _safe_get(channel, ["snippet", "title"], channel_id)
+        return recent_df if not recent_df.empty else channel_df, "youtube_api", channel_id, str(title)
+
+    if youtube_api_key and youtube_api_key.strip():
+        return _load_with_key(youtube_api_key.strip())
+
+    return run_with_provider_keys(
+        "youtube",
+        _load_with_key,
+        retryable_error=_is_youtube_retryable_error,
+    )
 
 
 def _gemini_generate_text(gemini_key: str, model: str, prompt: str) -> str:
@@ -800,7 +1097,7 @@ def _render_title_seo_lab(keyword_hints: List[str]) -> None:
             st.markdown(f"- {t}")
 
 
-def _render_competitor_benchmark(youtube_api_key: str) -> None:
+def _render_competitor_benchmark() -> None:
     section_header("Competitor Benchmark", icon="📊")
     handles = st.text_area(
         "Competitor handles (comma separated)",
@@ -813,8 +1110,8 @@ def _render_competitor_benchmark(youtube_api_key: str) -> None:
         st.caption("Enter competitor handles and run benchmark.")
         return
 
-    if not youtube_api_key.strip():
-        st.error("YouTube API key required for competitor benchmarking.")
+    if get_provider_key_count("youtube") <= 0:
+        st.error("No YouTube API keys are configured for competitor benchmarking.")
         return
 
     competitors = [h.strip() for h in handles.split(",") if h.strip()]
@@ -823,7 +1120,10 @@ def _render_competitor_benchmark(youtube_api_key: str) -> None:
     with st.spinner("Loading competitor channels..."):
         for handle in competitors:
             try:
-                cdf, source, cid, title = _fetch_or_get_cached_channel(handle, youtube_api_key.strip(), force_refresh=False)
+                cdf, source, cid, title = _fetch_or_get_cached_channel(
+                    handle,
+                    force_refresh=False,
+                )
                 cdf = _ensure_numeric_and_dates(cdf)
                 rows.append(
                     {
@@ -1055,40 +1355,79 @@ def _render_ai_studio(
     section_header("AI Studio", icon="🤖")
     st.markdown('<div class="yt-card">', unsafe_allow_html=True)
 
-    gemini_key = st.text_input(
-        "Gemini API Key", value=os.getenv("GEMINI_API_KEY", ""), type="password"
-    )
-    openai_key = st.text_input(
-        "OpenAI API Key", value=os.getenv("OPENAI_API_KEY", ""), type="password"
+    gemini_count = get_provider_key_count("gemini")
+    openai_count = get_provider_key_count("openai")
+    available_text_providers = [
+        provider for provider in ["gemini", "openai"] if get_provider_key_count(provider) > 0
+    ]
+    available_image_providers = available_text_providers[:]
+
+    st.caption(
+        f"Provider pools: Gemini `{gemini_count}` key(s) • OpenAI `{openai_count}` key(s). "
+        "Generation uses the configured secret pools automatically."
     )
 
-    text_provider = st.selectbox("Text provider", ["gemini", "openai"], index=0)
-    image_provider = st.selectbox("Image provider", ["gemini", "openai"], index=0)
+    if not available_text_providers and not available_image_providers:
+        st.info("Add `GEMINI_API_KEYS` and/or `OPENAI_API_KEYS` in secrets to unlock AI Studio.")
+        st.markdown("</div>", unsafe_allow_html=True)
+        return
+
+    if "ytuber_ai_task" not in st.session_state or st.session_state["ytuber_ai_task"] not in AI_STUDIO_TASKS:
+        st.session_state["ytuber_ai_task"] = AI_STUDIO_TASKS[0]
+
+    default_text_provider = "gemini" if "gemini" in available_text_providers else available_text_providers[0]
+    default_image_provider = "gemini" if "gemini" in available_image_providers else available_image_providers[0]
+    if "ytuber_text_provider" not in st.session_state or st.session_state["ytuber_text_provider"] not in available_text_providers:
+        st.session_state["ytuber_text_provider"] = default_text_provider
+    if "ytuber_image_provider" not in st.session_state or st.session_state["ytuber_image_provider"] not in available_image_providers:
+        st.session_state["ytuber_image_provider"] = default_image_provider
+
+    text_provider = st.selectbox(
+        "Text provider",
+        available_text_providers,
+        key="ytuber_text_provider",
+        format_func=lambda value: PROVIDER_LABELS.get(value, value.title()),
+    )
+    image_provider = st.selectbox(
+        "Image provider",
+        available_image_providers,
+        key="ytuber_image_provider",
+        format_func=lambda value: PROVIDER_LABELS.get(value, value.title()),
+    )
 
     default_text_model = "gemini-2.0-flash" if text_provider == "gemini" else "gpt-4.1-mini"
-    text_model = st.text_input("Text model", value=default_text_model)
+    text_model = st.text_input(
+        "Text model",
+        value=default_text_model,
+        key=f"ytuber_text_model_{text_provider}",
+    )
 
     default_image_model = (
         "gemini-2.0-flash-exp-image-generation" if image_provider == "gemini" else "gpt-image-1"
     )
-    image_model = st.text_input("Image model", value=default_image_model)
+    image_model = st.text_input(
+        "Image model",
+        value=default_image_model,
+        key=f"ytuber_image_model_{image_provider}",
+    )
 
+    prompt_goal = _goal_from_prompt(st.session_state.get("ytuber_growth_prompt", ""))
+    default_brief = (
+        f"Goal: {prompt_goal}. Channel: {channel_title}. Build a sharp plan based on the current stats."
+        if prompt_goal
+        else f"Channel: {channel_title}. Create a high-performing next-month content plan grounded in the current stats."
+    )
     creative_brief = st.text_area(
         "Creative brief",
-        value=f"Channel: {channel_title}. Create high-performing science content for next month.",
-        height=100,
+        value=default_brief,
+        key="ytuber_creative_brief",
+        height=110,
     )
 
     output_type = st.selectbox(
         "Creative task",
-        [
-            "Full Pack (titles + descriptions + scripts + thumbnail concepts)",
-            "Titles Only",
-            "Descriptions Only",
-            "Scripts Only",
-            "Hooks + CTAs",
-        ],
-        index=0,
+        AI_STUDIO_TASKS,
+        key="ytuber_ai_task",
     )
 
     col_a, col_b = st.columns(2)
@@ -1118,16 +1457,7 @@ def _render_ai_studio(
         with st.spinner("Generating AI content..."):
             try:
                 model_name = text_model.strip()
-                if text_provider == "gemini":
-                    if not gemini_key.strip():
-                        st.error("Gemini API key is required for Gemini content.")
-                        raise RuntimeError("Missing Gemini key")
-                    output = _gemini_generate_text(gemini_key.strip(), model_name, prompt)
-                else:
-                    if not openai_key.strip():
-                        st.error("OpenAI API key is required for GPT content.")
-                        raise RuntimeError("Missing OpenAI key")
-                    output = _openai_generate_text(openai_key.strip(), model_name, prompt)
+                output = _generate_text_with_provider_pool(text_provider, model_name, prompt)
 
                 st.markdown(
                     f"""
@@ -1150,31 +1480,12 @@ def _render_ai_studio(
             .head(1)["video_title"]
             .iloc[0]
         )
-        provider_key = None
-        provider_name = image_provider.lower().strip()
-        if provider_name == "gemini":
-            provider_key = gemini_key.strip()
-            if not provider_key:
-                st.error("Gemini API key is required for Gemini thumbnails.")
-        elif provider_name == "openai":
-            provider_key = openai_key.strip()
-            if not provider_key:
-                st.error("OpenAI API key is required for GPT thumbnails.")
-        else:
-            st.error(f"Unsupported image provider: {image_provider}")
-
-        if not provider_key:
-            st.markdown("</div>", unsafe_allow_html=True)
-            return
 
         with st.spinner("Generating thumbnails..."):
             try:
-                generator = ThumbnailGenerator(
-                    provider=provider_name,
-                    api_key=provider_key,
-                    model=image_model.strip(),
-                )
-                images = generator.generate(
+                images = _generate_images_with_provider_pool(
+                    image_provider,
+                    image_model.strip(),
                     title=f"Inspired by: {base_title}",
                     context=creative_brief,
                     style=(
@@ -1217,29 +1528,109 @@ def render() -> None:
         st.error("Missing dependency: google-api-python-client. Install with: python3 -m pip install google-api-python-client")
         return
 
+    _inject_ytuber_css()
+
+    if "ytuber_growth_prompt" not in st.session_state:
+        st.session_state["ytuber_growth_prompt"] = "@veritasium"
+    if "ytuber_module_selection" not in st.session_state or st.session_state["ytuber_module_selection"] not in WORKSPACE_MODULES:
+        st.session_state["ytuber_module_selection"] = WORKSPACE_MODULES[0]
+
     st.caption(
-        "Creator Suite: cache-aware channel sync, analytics, SEO tooling, competitor tracking, trend radar, planner, and AI studio."
+        "Creator Suite: live channel sync, analytics, benchmarking, SEO tooling, planning, and AI generation powered by background provider pools."
     )
 
-    youtube_api_key = st.text_input("YouTube API Key", value=os.getenv("YOUTUBE_API_KEY", ""), type="password")
-    channel_query = st.text_input("Channel handle / name / channel ID", value="@veritasium")
-    force_refresh = st.checkbox("Force API refresh (ignore cache)", value=False)
+    st.markdown(
+        """
+        <div class="ytuber-hero">
+            <div class="ytuber-kicker">Live Creator Workspace</div>
+            <div class="ytuber-title">Where should we start?</div>
+            <div class="ytuber-subtitle">
+                Paste a channel handle, name, or channel ID, then jump straight into audits, keyword intel,
+                planning, thumbnails, and AI-assisted content strategy.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    analyze = st.button("Load Channel (Last 1 Year)", type="primary", use_container_width=True)
+    provider_counts = _render_connection_cards()
+
+    st.markdown('<div class="ytuber-command-card">', unsafe_allow_html=True)
+    growth_prompt = st.text_input(
+        "How can I help you grow?",
+        key="ytuber_growth_prompt",
+        placeholder="@veritasium or 'Audit @veritasium and find the next niche to own'",
+        label_visibility="collapsed",
+    )
+    detected_channel = _extract_channel_query(growth_prompt)
+    if detected_channel:
+        st.markdown(
+            f"<div class='ytuber-detected'>Detected channel target: <code>{escape(detected_channel)}</code></div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            "<div class='ytuber-detected'>Paste a channel handle, name, or channel ID to load the live workspace.</div>",
+            unsafe_allow_html=True,
+        )
+
+    selected_action = st.pills(
+        "Quick actions",
+        QUICK_ACTIONS,
+        key="ytuber_quick_action",
+        label_visibility="collapsed",
+        selection_mode="single",
+    )
+    last_action = st.session_state.get("ytuber_last_applied_action")
+    if selected_action and selected_action != last_action:
+        st.session_state["ytuber_module_selection"] = QUICK_ACTION_TO_MODULE.get(
+            selected_action,
+            WORKSPACE_MODULES[0],
+        )
+        mapped_task = QUICK_ACTION_TO_TASK.get(selected_action)
+        if mapped_task:
+            st.session_state["ytuber_ai_task"] = mapped_task
+        st.session_state["ytuber_last_applied_action"] = selected_action
+    elif not selected_action:
+        st.session_state["ytuber_last_applied_action"] = None
+
+    controls_left, controls_mid, controls_right = st.columns([1.1, 1.1, 1.5])
+    with controls_left:
+        force_refresh = st.toggle(
+            "Force live refresh",
+            key="ytuber_force_refresh",
+            help="Bypass cached rows and pull the last year from the YouTube API again.",
+        )
+    with controls_mid:
+        st.caption(
+            f"YouTube pool: {provider_counts['youtube']} key(s) ready"
+            if provider_counts["youtube"] > 0
+            else "YouTube pool missing"
+        )
+    with controls_right:
+        analyze = st.button(
+            "Load Live Workspace",
+            type="primary",
+            use_container_width=True,
+            disabled=provider_counts["youtube"] <= 0,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    if provider_counts["youtube"] <= 0:
+        st.warning(
+            "No YouTube API keys are configured. Add `YOUTUBE_API_KEYS` or `YOUTUBE_API_KEY` in Streamlit secrets to enable live channel loading."
+        )
 
     if analyze:
-        if not youtube_api_key.strip():
-            st.error("YouTube API key is required.")
-            return
-        if not channel_query.strip():
-            st.error("Enter a channel handle or ID.")
+        channel_query = _extract_channel_query(st.session_state.get("ytuber_growth_prompt", ""))
+        if not channel_query:
+            st.error("Enter a channel handle, channel name, or channel ID in the prompt box.")
             return
 
         with st.spinner("Loading channel data from cache/API..."):
             try:
                 channel_df, source, channel_id, channel_title = _fetch_or_get_cached_channel(
                     channel_query=channel_query.strip(),
-                    youtube_api_key=youtube_api_key.strip(),
                     force_refresh=force_refresh,
                 )
             except Exception as exc:
@@ -1250,6 +1641,8 @@ def render() -> None:
         st.session_state["ytuber_channel_title"] = channel_title
         st.session_state["ytuber_channel_id"] = channel_id
         st.session_state["ytuber_source"] = source
+        st.session_state.pop("ytuber_keyword_hints", None)
+        st.session_state.pop("ytuber_creative_brief", None)
 
     if "ytuber_channel_df" not in st.session_state:
         st.info("Load a channel to unlock the full Ytuber suite.")
@@ -1265,44 +1658,44 @@ def render() -> None:
         return
 
     channel_df = _ensure_numeric_and_dates(channel_df)
-    st.success(f"Loaded `{channel_title}` ({channel_id}) from `{source}`")
-
-    tabs = st.tabs(
-        [
-            "Overview",
-            "Channel Audit",
-            "Keyword Intel",
-            "Title & SEO Lab",
-            "Competitor Benchmark",
-            "Trend Radar",
-            "Content Planner",
-            "AI Studio",
-        ]
+    focus_text = selected_action or "Explore the workspace"
+    st.markdown(
+        f"""
+        <div class="ytuber-banner">
+            <div class="ytuber-banner-title">{escape(channel_title)}</div>
+            <div class="ytuber-banner-meta">
+                Loaded from <code>{escape(source)}</code> • Channel ID <code>{escape(channel_id)}</code> •
+                {len(channel_df):,} videos in view • Focus: <strong>{escape(focus_text)}</strong>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    with tabs[0]:
+    selected_module = st.segmented_control(
+        "Workspace modules",
+        WORKSPACE_MODULES,
+        key="ytuber_module_selection",
+        selection_mode="single",
+        label_visibility="collapsed",
+    )
+
+    if selected_module == "Overview":
         _render_overview(channel_df)
-
-    with tabs[1]:
+    elif selected_module == "Channel Audit":
         _render_channel_audit(channel_df)
-
-    with tabs[2]:
+    elif selected_module == "Keyword Intel":
         keyword_hints = _render_keyword_intel(channel_df)
         st.session_state["ytuber_keyword_hints"] = keyword_hints
-
-    with tabs[3]:
+    elif selected_module == "Title & SEO Lab":
         hints = st.session_state.get("ytuber_keyword_hints") or _top_keywords(channel_df, 20)
         _render_title_seo_lab(hints)
-
-    with tabs[4]:
-        _render_competitor_benchmark(youtube_api_key)
-
-    with tabs[5]:
+    elif selected_module == "Competitor Benchmark":
+        _render_competitor_benchmark()
+    elif selected_module == "Trend Radar":
         _render_trend_radar(channel_df)
-
-    with tabs[6]:
+    elif selected_module == "Content Planner":
         _render_content_planner(channel_df)
-
-    with tabs[7]:
+    elif selected_module == "AI Studio":
         hints = st.session_state.get("ytuber_keyword_hints") or _top_keywords(channel_df, 20)
         _render_ai_studio(channel_df, channel_title, channel_id, hints)
