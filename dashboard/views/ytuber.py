@@ -1323,6 +1323,7 @@ def _render_score_parts(parts: Dict[str, int]) -> None:
 def _queue_ai_studio_prefill(task: str, brief: str) -> None:
     st.session_state["ytuber_ai_task_pending"] = task
     st.session_state["ytuber_ai_brief_pending"] = brief
+    st.session_state["ytuber_active_module_pending"] = "AI Studio"
     st.session_state["ytuber_ai_notice"] = f"AI Studio is prefilled for {task.lower()}. Open the AI Studio tab."
     st.rerun()
 
@@ -2583,6 +2584,8 @@ def render() -> None:
         st.session_state.pop("ytuber_creative_brief", None)
         st.session_state.pop("ytuber_ai_task_pending", None)
         st.session_state.pop("ytuber_ai_brief_pending", None)
+        st.session_state["ytuber_active_module"] = "AI Studio"
+        st.session_state.pop("ytuber_active_module_pending", None)
         st.session_state.pop("ytuber_ai_notice", None)
 
     if "ytuber_channel_df" not in st.session_state:
@@ -2614,23 +2617,39 @@ def render() -> None:
         unsafe_allow_html=True,
     )
 
-    tabs = st.tabs(WORKSPACE_MODULES)
-    with tabs[0]:
+    pending_module = st.session_state.pop("ytuber_active_module_pending", None)
+    if pending_module in WORKSPACE_MODULES:
+        st.session_state["ytuber_active_module"] = pending_module
+    if (
+        "ytuber_active_module" not in st.session_state
+        or st.session_state["ytuber_active_module"] not in WORKSPACE_MODULES
+    ):
+        st.session_state["ytuber_active_module"] = "AI Studio"
+
+    active_module = st.segmented_control(
+        "Workspace",
+        WORKSPACE_MODULES,
+        key="ytuber_active_module",
+        selection_mode="single",
+        label_visibility="collapsed",
+    )
+
+    if active_module == "AI Studio":
         hints = st.session_state.get("ytuber_keyword_hints") or _top_keywords(channel_df, 20)
         _render_ai_studio(channel_df, channel_title, channel_id, hints)
-    with tabs[1]:
+    elif active_module == "Overview":
         _render_overview(channel_df)
-    with tabs[2]:
+    elif active_module == "Channel Audit":
         _render_channel_audit(channel_df)
-    with tabs[3]:
+    elif active_module == "Keyword Intel":
         keyword_hints = _render_keyword_intel(channel_df)
         st.session_state["ytuber_keyword_hints"] = keyword_hints
-    with tabs[4]:
+    elif active_module == "Title & SEO Lab":
         hints = st.session_state.get("ytuber_keyword_hints") or _top_keywords(channel_df, 20)
         _render_title_seo_lab(hints)
-    with tabs[5]:
+    elif active_module == "Competitor Benchmark":
         _render_competitor_benchmark(channel_df, channel_title, channel_id)
-    with tabs[6]:
+    elif active_module == "Content Planner":
         _render_content_planner(channel_df)
 
     _render_pool_footer(
