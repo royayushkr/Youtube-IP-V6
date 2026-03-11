@@ -1,86 +1,37 @@
-# YouTube Creator Insights — Week 7 & 8 Progress
-**Project:** Purdue Industry Practicum (PYI)
-**Date:** February 25, 2026
-**Sprint Focus:** Data Pipeline Completion → BERTopic Model Training → Dashboard Shell
+# BERTopic — Methodology & Implementation
 
 ---
 
-## Overview
+## Corpus
 
-This document covers all work completed in the current sprint session, spanning the tail end of Week 6 through Week 7 and the start of Week 8. The session took the project from raw category CSVs through a fully merged, cleaned, and preprocessed dataset, and completed BERTopic model training with validated output.
+**Source:** `data/processed/combined_videos_raw.csv` — 28,037 videos across 6 categories after merging category CSVs and deduplicating cross-category overlaps.
 
----
+**After preprocessing drops:** 28,000 documents (37 dropped — 1 null views, 36 unparseable durations).
 
-## Week 6 Completion — Data Cleaning & EDA (PYI-3)
-
-**Status: Complete — mark Done in Jira.**
-
-### Merge (`scripts/merge_datasets.py`)
-
-Consolidated the six category CSVs into `data/processed/combined_videos_raw.csv`.
-
-**Duplicate handling:**
-
-- **Within-file duplicates** — Gaming, entertainment, food, and tech each contained videos scraped on multiple snapshot dates. Resolved by keeping the latest snapshot per `video_id`.
-- **Cross-category duplicates** — 250 video_ids appeared in both `research_science` and `tech` (Ben Eater, Computerphile, Practical Engineering, Real Engineering, Two Minute Papers). Resolved by reassigning all five channels to `research_science` (more specific label) before deduplication.
-
-**Final merged dataset:** 29,702 rows → 28,037 unique videos across 461 channels.
-
-| Category | Videos | Channels |
-|---|---|---|
-| research_science | 6,779 | 40 |
-| entertainment | 4,690 | 99 |
-| tech | 4,294 | 92 |
-| food | 4,126 | 87 |
-| gaming | 4,093 | 59 |
-| fitness | 4,055 | 84 |
-
----
-
-### EDA (`notebooks/exploratory/02_eda_youtube_metadata.ipynb`)
-
-9 cells, all executed. Figures saved to `outputs/figures/`.
-
-| Cell | Content |
+| Category | Videos |
 |---|---|
-| 1 | Imports, load, type casting, duration parsing |
-| 2 | Dataset overview — null rates, videos/channels per category, Shorts counts |
-| 3 | View count distribution (log scale) + median views by category |
-| 4 | Engagement metrics — like rate and comment rate by category |
-| 5 | Duration distribution — long-form histogram + median duration by category |
-| 6 | Channel-level stats — subscribers vs median views scatter, top 10 channels |
-| 7 | Publishing volume per quarter by category (2020–2026) |
-| 8 | Text field coverage — BERTopic readiness by category |
-| 9 | Data quality flag summary |
-
-**Key findings:**
-- Shorts are 22.8% of all videos; fitness (35.6%) and food (31.9%) most short-form heavy
-- 29% of videos have no tags; fitness worst at 40.1%
-- 2,426 videos have neither description nor tags — title only for BERTopic
-- Top channels by median views: MrBeast Gaming (47.6M), Mark Rober (24.4M), NileRed (11.6M)
+| research_science | 6,779 |
+| entertainment | 4,690 |
+| tech | 4,294 |
+| food | 4,126 |
+| gaming | 4,093 |
+| fitness | 4,055 |
 
 ---
 
-### Preprocessing (`notebooks/modeling/03_bertopic_experiments.ipynb`, Cells 1–8)
+## Text Preprocessing
 
-| Cell | Content |
-|---|---|
-| 1 | Imports, load `combined_videos_raw.csv`, type casting |
-| 2 | Drop unusable rows — 37 dropped (1 null views, 36 unparseable durations) |
-| 3 | Derive engagement features: `like_rate`, `comment_rate`, `views_per_day`, `publish_year`, `publish_month` |
-| 4 | Text cleaning — strip URLs, hashtags, @mentions, emoji, punctuation from title/description/tags |
-| 5 | Build `bertopic_text` — title doubled + description + tags; flag sparse docs (< 5 tokens) |
-| 6 | Drop 26 low-value columns (thumbnail URLs/dimensions, redundant IDs, low-signal booleans) |
-| 7 | Save three output files |
-| 8 | Preprocessing summary |
+### Field Construction
 
-**bertopic_text strategy:**
+Each document is built from three cleaned fields:
+
 ```
 bertopic_text = title_clean + " " + title_clean + " " + desc_clean + " " + tags_clean
 ```
-Title doubled to upweight it relative to the longer description.
 
-**Text coverage in final corpus (28,000 docs):**
+Title is doubled to upweight it relative to the longer description. All three fields are cleaned before concatenation.
+
+**Text coverage in final corpus:**
 
 | Coverage | Count | % |
 |---|---|---|
@@ -90,225 +41,176 @@ Title doubled to upweight it relative to the longer description.
 | Title only | 2,426 | 8.7% |
 | Sparse (< 5 tokens) | 182 | 0.7% |
 
-**Outputs:** `combined_videos_clean.csv` (28,000 × 42), `bertopic_corpus.txt` (28,000 lines), `bertopic_metadata.csv` (28,000 × 12)
+### Cleaning Pipeline
+
+Each field passes through sequential regex substitutions: URLs, hashtags, @mentions, emoji, and punctuation are stripped and replaced with whitespace. Runs of whitespace are collapsed.
+
+Descriptions additionally pass through a boilerplate filter before cleaning. The filter operates line-by-line and drops any line matching a compiled regex covering:
+
+- Subscribe/notification CTAs
+- Patreon, Ko-fi, merch, membership links
+- Discord server links
+- Sponsor mentions (including NordVPN, ExpressVPN, Surfshark)
+- Affiliate and promo code language
+- Social handle lines and "links in description" variants
+- Business inquiry and email addresses
+- Twitch/livestream CTAs (donate, TTS, channel points, Streamlabs)
+- Copyright notices and end-card phrases
+- Channel-specific boilerplate (SmarterEveryDay social variants)
+
+Tags are pipe-delimited in the raw data and are cleaned individually before joining.
+
+### Number Stripping
+
+Standalone digit tokens are removed from `bertopic_text` after field concatenation. This prevents subscriber milestone content ("I hit 100K!") from generating numeric bigrams that surface as spurious topic keywords.
 
 ---
 
-## Week 7 — BERTopic Model Training (PYI-84)
+## Component Models
 
-**Status: Complete — mark Done in Jira.**
+### Embedding Model
 
-### Environment Setup
+`all-MiniLM-L6-v2` via `sentence-transformers`. Chosen for speed and strong semantic quality on short-to-medium text. Embeddings are computed in batches across the full 28,000-document corpus.
 
-BERTopic is not available on conda defaults. Required a fresh environment:
+### UMAP
 
-```bash
-conda create -n youtube-ip python=3.11
-conda activate youtube-ip
-pip install bertopic sentence-transformers umap-learn hdbscan jupyter pandas numpy matplotlib seaborn
-pip install ipykernel
-python -m ipykernel install --user --name youtube-ip --display-name "youtube-ip"
+```python
+UMAP(
+    n_neighbors=15,
+    n_components=5,
+    min_dist=0.0,
+    metric="cosine",
+    random_state=42,
+    low_memory=False,
+)
 ```
 
-**Why Python 3.11:** The base environment (Python 3.12) triggers a `ForwardRef._evaluate()` TypeError via a `langsmith` → `pydantic.v1` chain imported by BERTopic's LangChain backend. Python 3.11 avoids this entirely.
+`n_components=5` is used for clustering — not 2, which is visualization-only. `metric="cosine"` matches the geometry of sentence embeddings. `min_dist=0.0` allows tighter cluster packing.
 
-**Issue encountered:** Cell 10 (component model assembly) was accidentally saved as a Markdown cell instead of Code. This caused `NameError: name 'embedding_model' is not defined` in Cell 12, and cells 12–15 all failed. Fixed by changing the cell type back to Code and rerunning from Cell 10.
+### HDBSCAN
+
+```python
+HDBSCAN(
+    min_cluster_size=30,
+    metric="euclidean",
+    cluster_selection_method="eom",
+    prediction_data=True,
+)
+```
+
+`min_cluster_size=30` sets the minimum videos per topic. `prediction_data=True` is required for `transform()` on new documents at inference time. `eom` (excess of mass) is the default cluster selection method and performs better than `leaf` on this corpus size.
+
+### Vectorizer
+
+```python
+CountVectorizer(
+    ngram_range=(1, 2),
+    stop_words=list(ENGLISH_STOP_WORDS) + _CHANNEL_STOPWORDS,
+    min_df=10,
+    max_df=0.85,
+)
+```
+
+Bigrams are included to improve keyword quality (e.g. "practical engineering" vs "engineering"). `min_df=10` filters rare noisy terms. `max_df=0.85` filters near-universal terms. The stopword list extends sklearn's `ENGLISH_STOP_WORDS` with channel-name tokens that would otherwise surface as topic keywords:
+
+```python
+_CHANNEL_STOPWORDS = [
+    "smarter", "smartereveryday", "vsauce", "veritasium", "kurzgesagt",
+    "mrbeast", "markiplier", "pewdiepie", "linus", "linustechtips",
+    "technicalguruji", "mkbhd", "unboxtherapy", "jerryrigeverything",
+    "jacksepticeye", "affiliate",
+]
+```
+
+### Representation Model
+
+`KeyBERTInspired()` — refines c-TF-IDF topic keywords using embedding similarity, producing more semantically coherent labels than raw c-TF-IDF alone.
 
 ---
 
-### PYI-87 — Implement Training Notebook (Cells 9–11)
+## Training
 
-**Cell 9 — Imports & Config**
-
-| Constant | Value | Notes |
-|---|---|---|
-| `RANDOM_STATE` | 42 | Reproducibility |
-| `MIN_TOPIC_SIZE` | 30 | Min videos per topic |
-| `N_GRAM_RANGE` | (1, 2) | Unigrams + bigrams |
-| `TOP_N_WORDS` | 10 | Keywords per topic |
-
-**Cell 10 — Component Models**
-
-| Component | Choice | Rationale |
-|---|---|---|
-| Embedding model | `all-MiniLM-L6-v2` | Fast, lightweight, strong semantic quality for short-to-medium text |
-| UMAP | `n_neighbors=15, n_components=5, metric=cosine` | 5 components before HDBSCAN (not 2 — that's visualization only) |
-| HDBSCAN | `min_cluster_size=30, eom, prediction_data=True` | `prediction_data=True` required for `transform()` on new docs later |
-| Vectorizer | `CountVectorizer(ngram_range=(1,2), stop_words=english, min_df=5, max_df=0.85)` | Bigrams improve keyword quality |
-| Representation | `KeyBERTInspired()` | Refines c-TF-IDF labels using embedding similarity |
-
-**Cell 11 — Training**
-
-```
-2026-02-25 13:52:43 — Embedding start
-2026-02-25 13:56:08 — Embedding complete       (~3.5 min)
-2026-02-25 13:56:08 — UMAP start
-2026-02-25 13:56:30 — UMAP complete            (~22 sec)
-2026-02-25 13:56:30 — HDBSCAN start
-2026-02-25 13:56:32 — HDBSCAN complete         (~2 sec)
-2026-02-25 13:56:32 — c-TF-IDF extraction
-2026-02-25 13:56:34 — c-TF-IDF complete
-2026-02-25 13:56:34 — Topic reduction start    (220 → auto-merge)
-2026-02-25 13:56:51 — Representation fine-tuning complete
-2026-02-25 13:56:51 — Reduced 220 → 119 topics
-
-Total training time: ~7 minutes
+```python
+BERTopic(
+    nr_topics               = 90,
+    calculate_probabilities = False,
+    verbose                 = True,
+)
 ```
 
-**Training result:**
-- **118 topics** found (excluding outlier topic -1)
-- **10,459 outlier docs** (37.4%) assigned to topic -1
+`nr_topics=90` merges near-duplicate topics post-fit via c-TF-IDF similarity down to a fixed target. `calculate_probabilities=False` reduces memory overhead on the full corpus.
+
+**Training times (March 11, 2026):**
+
+| Stage | Duration |
+|---|---|
+| Embedding | ~2m 44s |
+| UMAP | ~14s |
+| HDBSCAN | ~2s |
+| c-TF-IDF + representation | ~10s |
+| Topic reduction (228 → 90) | ~8s |
+| **Total** | **~3m 18s** |
 
 ---
 
-### PYI-88 — Topic Labels & Performance Stats (Cell 12)
+## Outlier Reduction
 
-**Top 20 topics by size:**
+HDBSCAN assigns documents it cannot confidently cluster to topic `-1`. The raw outlier rate before reduction was 36.6% (10,237 docs). To recover these documents, `reduce_outliers()` is applied using embedding similarity:
 
-| Topic | Count | Label |
-|---|---|---|
-| 0 | 2,529 | yoga, routine, exercises, exercise |
-| 1 | 1,740 | cook, cookbook, chef, cooking |
-| 2 | 1,406 | black holes, space time, dark matter, general relativity |
-| 3 | 974 | roblox, sonic, horror game, walkthrough gameplay |
-| 4 | 579 | laptops, lenovo, laptop, dell |
-| 5 | 550 | supernatural, thriller, ending explained, stranger things |
-| 6 | 538 | verge, tech news, gadget tech, vergecast |
-| 7 | 404 | fortnite, battle royale, nova, new update |
-| 8 | 359 | science chemistry, chemical, chemistry, acid |
-| 9 | 333 | gratitude, kindness, life, say thank |
-| 10 | 321 | numberphile, numbers, number, mathematics comedy |
-| 11 | 278 | nvidia ai, gpu, nvidia, simulations, unreal engine |
-| 12 | 219 | spider man, avengers doomsday, avengers, marvel |
-| 13 | 214 | computers computerphile, computerphile computer |
-| 14 | 211 | statistics, data, statistical, data science |
-| 15 | 193 | periodic videos, periodic, elements, element |
-| 16 | 187 | tiktok, copyright, influencers, toxic |
-| 17 | 177 | instagram smarter, smarter every day, patreon smarter |
-| 18 | 176 | infrastructure, construction, practical engineering |
-| 19 | 166 | arc raiders, ninja, fortnite |
+```python
+new_topics = topic_model.reduce_outliers(corpus, topics, strategy="embeddings", threshold=0.3)
+topic_model.update_topics(corpus, topics=new_topics, vectorizer_model=vectorizer_model, representation_model=representation_model)
+```
+
+`strategy="embeddings"` reassigns each outlier to the nearest topic centroid in embedding space. `threshold=0.3` sets the minimum cosine similarity required for reassignment — docs below this threshold remain as outliers. `update_topics()` re-derives c-TF-IDF and KeyBERT labels on the updated assignments.
+
+**Outlier rate after reduction: 3.2%** (down from 36.6%).
+
+---
+
+## Results
+
+**89 topics** found across 28,000 documents.
+
+| Metric | Value |
+|---|---|
+| Topics found (excl. -1) | 89 |
+| Outlier docs after reduction | 3.2% |
+| Topics < 50 videos | 7 |
+| Median dominant-category share | 0.87 |
+| Topics > 80% one category | 58 |
+| Cross-category topics (≤ 50% dominant) | 6 |
 
 **Top 15 topics by median views:**
 
 | Topic | Label | Videos | Median Views | Top Category |
 |---|---|---|---|---|
-| 42 | minecraft challenges, future minecraft | 80 | 36,901,338 | gaming |
-| 108 | arcade, order, vodka, 2nd channel | 39 | 7,586,647 | entertainment |
-| 61 | instagram, livestreams, youtuber | 53 | 7,385,807 | entertainment |
-| 107 | gym, olympic, competition, competing | 40 | 6,072,483 | fitness |
-| 116 | kurzgesagt, voice, bird army | 32 | 4,997,199 | research_science |
-| 8 | science chemistry, chemical, acid | 359 | 4,609,015 | research_science |
-| 103 | stream, donations, channels, irl | 41 | 4,272,683 | gaming |
-| 97 | pokemon, twitch discord, emerald | 43 | 3,345,146 | gaming |
-| 17 | smarter every day, instagram smarter | 177 | 2,887,104 | research_science |
-| 89 | uncle roger, grandpa, nigel | 46 | 2,002,146 | food |
-| 18 | infrastructure, practical engineering | 176 | 1,866,527 | research_science |
-| 31 | discord, nerdy maths, exclusive | 96 | 1,835,634 | research_science |
-| 106 | hermit, episode 10, episode 23 | 40 | 1,716,370 | gaming |
-| 28 | minecraft, empires, empire, adventure | 107 | 1,630,493 | gaming |
-| 26 | animations, animating math, 3blue1brown | 112 | 1,622,943 | research_science |
+| 67 | order, food, black friday, games | 59 | 7,757,749 | entertainment |
+| 88 | claire, anne, anna, kelly | 42 | 4,425,666 | entertainment |
+| 16 | twitch, streaming, gaming channel, stream | 433 | 2,147,734 | gaming |
+| 72 | uncle roger, dish, restaurant | 44 | 2,033,997 | food |
+| 18 | engineering, real engineering, engineer, construction | 394 | 1,978,948 | research_science |
+| 26 | youtuber, youtubers, chrome, dad | 277 | 1,835,197 | gaming |
+| 69 | gym, olympic, olympics, ballerina | 87 | 1,812,677 | fitness |
+| 76 | season episode, episode, finale | 45 | 1,698,303 | gaming |
+| 32 | scientists, researchers, science future, scientist | 273 | 1,215,842 | research_science |
+| 10 | periodic, elements, science chemistry, crystals | 588 | 1,097,906 | research_science |
+| 68 | minecraft, modded, messed, gaming | 90 | 1,051,687 | gaming |
+| 49 | nuclear fusion, nuclear, fusion, science news | 191 | 928,033 | research_science |
+| 31 | minecraft, cash, nico, mod | 188 | 632,640 | entertainment |
+| 82 | engine, engines, turbo, motor | 71 | 581,085 | tech |
+| 6 | planets, planet, exoplanets, nasa | 960 | 566,108 | research_science |
+
+**Category coherence** — median dominant-category share of 0.87 indicates topics cluster strongly within categories rather than blending across niches. 58 of 89 topics are >80% one category.
 
 ---
 
-### PYI-89 — Validate Model Output (Cell 13)
-
-**Outlier rate: 30%**
-
-**Topic size distribution (118 topics, excl. outliers):**
-
-| Stat | Value |
-|---|---|
-| Mean | 148.7 videos |
-| Median | 54.5 videos |
-| Min | 32 videos |
-| Max | 2,529 videos |
-| Topics < 50 videos | 41 |
-
-**Category coherence:**
-- Median dominant-category share: **0.97** — topics are almost entirely single-category
-- 105 of 118 topics are >80% one category
-- Only 2 topics are cross-category (≤50% dominant share)
-
-This is a strong signal. The model is finding real semantic clusters within categories rather than blending unrelated niches.
-
-**Spot-check (3 random topics):**
-
-- **Topic 45** (fallout season, prime video, amazon prime) → TV/streaming content breakdown and review videos ✓
-- **Topic 6** (verge, tech news, vergecast) → Contains some mismatches (self-hosted Nextcloud, Arduino) suggesting this topic is slightly broad
-- **Topic 116** (kurzgesagt, bird army, voice) → Clean Kurzgesagt cluster ✓
-
----
-
-### Save & Summary (Cell 14)
-
-**Outputs saved:**
-- `outputs/models/bertopic_model` — serialized model (pickle + c-TF-IDF)
-- `data/processed/bertopic_metadata.csv` — 28,000 rows with `topic_id` and `topic_label`
-- `data/processed/topic_stats.csv` — per-topic performance stats
-
-```
-Documents trained on   : 28,000
-Topics found           : 118
-Outlier docs (topic -1): 10,459 (37.4%)
-Median topic size      : 54 videos
-Largest topic          : 2,529 videos
-```
-
----
-
-## Week 8 — Dashboard Shell (PYI-90)
-
-Not yet started. Tickets created today:
-
-| Ticket | Task |
-|---|---|
-| PYI-91 | Theme & Config |
-| PYI-92 | App Entry Point & Sidebar |
-| PYI-93 | Build `home.py` |
-| PYI-94 | `channel_analysis.py` — Benchmark stats & Data Explorer |
-| PYI-95 | `channel_analysis.py` — Topic Landscape |
-| PYI-96 | Recommendations Page |
-| PYI-97 | Niche Benchmark Display |
-| PYI-98 | Data-Driven Recommendations |
-| PYI-99 | Wire Thumbnail Generator |
-| PYI-100 | Extension Center & Deploy Notes |
-
-Existing dashboard stubs: `dashboard/app.py`, `dashboard/components/sidebar.py`, `dashboard/components/visualizations.py`, `dashboard/pages/channel_analysis.py`, `dashboard/pages/recommendations.py`
-
----
-
-## Jira Status Summary
-
-| Ticket | Summary | Status |
-|---|---|---|
-| PYI-2 | Week 5: Full-Scale Data Collection | Done |
-| PYI-3 | Week 6: Data Cleaning & EDA | **Mark Done** |
-| PYI-66 | Week 6: BERTopic Research & Documentation | In Progress (Debadri) |
-| PYI-67 | Week 6: LLM Strategy — Gemini vs GPT-4 | In Progress (Ayush) |
-| PYI-68 | Week 5: Data Quality Assessment | Done |
-| PYI-81 | Text preprocessing | **Mark Done** |
-| PYI-82 | Handle missing data | **Mark Done** |
-| PYI-83 | EDA & Quality Validation | **Mark Done** |
-| PYI-84 | Week 7: BERTopic Model Training | **Mark Done** |
-| PYI-87 | Implement Training Notebook | **Mark Done** |
-| PYI-88 | Generate Topic Labels & Performance Stats | **Mark Done** |
-| PYI-89 | Validate Model Output | **Mark Done** |
-| PYI-90 | Week 7: App Shell & Navigation | To Do |
-
----
-
-## Files Produced This Session
+## Outputs
 
 | File | Location | Description |
 |---|---|---|
-| `merge_datasets.py` | `scripts/` | Merges 6 category CSVs with dedup logic |
-| `combined_videos_raw.csv` | `data/processed/` | 28,037 videos, 54 columns |
-| `combined_videos_clean.csv` | `data/processed/` | 28,000 videos, 42 columns, clean text fields |
+| `bertopic_model` | `outputs/models/` | Serialized model (pickle + c-TF-IDF) |
+| `combined_videos_clean.csv` | `data/processed/` | 28,000 rows × 42 cols, cleaned text fields |
 | `bertopic_corpus.txt` | `data/processed/` | 28,000 documents, one per line |
-| `bertopic_metadata.csv` | `data/processed/` | 28,000 rows with topic_id and topic_label |
-| `topic_stats.csv` | `data/processed/` | Per-topic performance stats (118 topics) |
-| `bertopic_model` | `outputs/models/` | Serialized BERTopic model |
-| `02_eda_youtube_metadata.ipynb` | `notebooks/exploratory/` | 9 cells, all executed |
-| `03_bertopic_experiments.ipynb` | `notebooks/modeling/` | 14 cells, all executed |
-
----
+| `bertopic_metadata.csv` | `data/processed/` | 28,000 rows with `topic_id` and `topic_label` |
+| `topic_stats.csv` | `data/processed/` | Per-topic performance stats (89 topics) |
