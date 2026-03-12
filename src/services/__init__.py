@@ -9,9 +9,11 @@ from src.services.outliers_finder import (
     OutlierSearchResult,
     build_age_bucket_summary,
     build_duration_summary,
+    build_scan_quality_summary,
     build_title_keyword_summary,
     build_title_pattern_summary,
     search_outlier_videos,
+    score_band_for_value,
 )
 
 __all__ = [
@@ -25,7 +27,9 @@ __all__ = [
     "OutlierSearchResult",
     "build_age_bucket_summary",
     "build_duration_summary",
+    "build_scan_quality_summary",
     "build_title_keyword_summary",
     "build_title_pattern_summary",
     "search_outlier_videos",
+    "score_band_for_value",
 ]

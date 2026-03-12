@@ -109,7 +109,14 @@ Ytuber now links out to the standalone Outlier Finder page instead of hosting th
 
 Located in `dashboard/views/outlier_finder.py`.
 
-Outlier Finder is a standalone sidebar feature for niche research. It scans the public cohort returned by the official YouTube Data API, applies stricter filtering for language, duration, subscriber range, and freshness, then ranks videos by age-adjusted overperformance.
+Outlier Finder is a standalone sidebar feature for niche research. It scans the public cohort returned by the official YouTube Data API, applies stricter filtering for language, duration, subscriber range, and freshness, then presents the workflow in a results-first order:
+
+- Top Outliers In This Scan
+- Breakout Snapshot
+- AI Research
+- How This Works
+
+The page uses a premium dark theme with a purple accent system, standardized result cards, structured AI research cards, and an inline methodology section for metric definitions and caveats.
 
 It is designed for practical research, not exhaustive YouTube-wide ranking. Results are limited by official API search coverage, public metrics, language heuristics, and your configured API quota.
 
@@ -143,7 +150,8 @@ You can copy `.streamlit/secrets.toml.example` for local reference.
 - Channel Analysis and Recommendations work from the committed datasets.
 - The Ytuber page uses the configured key pools to serve live channel data without exposing raw keys in the UI.
 - Outliers Finder uses the same YouTube key pool, caches niche scans for one hour, and caches channel baselines for six hours to control quota burn.
-- Outliers Finder also offers structured Gemini/OpenAI research cards when AI keys are configured.
+- Outliers Finder surfaces Results first, then a Breakout Snapshot, then structured Gemini/OpenAI AI Research cards when AI keys are configured.
+- The Outlier Finder methodology section explains the outlier score, filter behavior, and API limitations directly inside the page.
 - Thumbnail and text generation features use the configured Gemini and/or OpenAI key pools.
 - OpenAI thumbnail generation uses the official Images API flow and now exposes model, size, quality, background, and output-format controls in AI Studio.
 

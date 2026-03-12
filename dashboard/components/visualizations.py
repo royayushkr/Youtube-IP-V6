@@ -13,28 +13,30 @@ PLOTLY_DARK_TEMPLATE: Dict[str, Any] = {
     "layout": {
         "paper_bgcolor": "rgba(0,0,0,0)",
         "plot_bgcolor": "rgba(0,0,0,0)",
-        "font": {"color": "#B0B0B0", "family": "Inter, system-ui"},
+        "font": {"color": "#B8C1DA", "family": "Plus Jakarta Sans, Inter, system-ui"},
         "xaxis": {
-            "gridcolor": "rgba(255,255,255,0.05)",
-            "zerolinecolor": "rgba(255,255,255,0.05)",
+            "gridcolor": "rgba(255,255,255,0.06)",
+            "zerolinecolor": "rgba(255,255,255,0.06)",
+            "title": {"font": {"color": "#D7DDF0"}},
         },
         "yaxis": {
-            "gridcolor": "rgba(255,255,255,0.05)",
-            "zerolinecolor": "rgba(255,255,255,0.05)",
+            "gridcolor": "rgba(255,255,255,0.06)",
+            "zerolinecolor": "rgba(255,255,255,0.06)",
+            "title": {"font": {"color": "#D7DDF0"}},
         },
         "colorway": [
-            "#FF0000",
-            "#00D4FF",
-            "#00E676",
-            "#FFB300",
-            "#FF6090",
-            "#7C4DFF",
-            "#FF9100",
+            "#8B5CF6",
+            "#A855F7",
+            "#C4B5FD",
+            "#60A5FA",
+            "#34D399",
+            "#FBBF24",
+            "#F472B6",
         ],
         "hoverlabel": {
-            "bgcolor": "#1A1A2E",
+            "bgcolor": "#141A31",
             "font": {"color": "#FFFFFF"},
-            "bordercolor": "#FF0000",
+            "bordercolor": "#8B5CF6",
         },
     }
 }
@@ -43,6 +45,15 @@ PLOTLY_DARK_TEMPLATE: Dict[str, Any] = {
 def _apply_dark_template(fig: go.Figure) -> go.Figure:
     """Apply the shared dark template to a Plotly figure."""
     fig.update_layout(**PLOTLY_DARK_TEMPLATE["layout"])
+    fig.update_layout(
+        title_font=dict(size=18, family="Space Grotesk, Plus Jakarta Sans, system-ui", color="#F7F8FC"),
+        legend=dict(
+            bgcolor="rgba(20, 26, 49, 0.74)",
+            bordercolor="rgba(255,255,255,0.06)",
+            borderwidth=1,
+            font=dict(color="#D7DDF0"),
+        ),
+    )
     return fig
 
 
@@ -187,7 +198,7 @@ def plotly_bar_chart(
                 orientation="h",
                 marker=dict(
                     color=df[y],
-                    colorscale="Reds",
+                    colorscale="Purples",
                     line=dict(color="rgba(255,255,255,0.4)", width=0.5),
                 ),
             )
@@ -199,7 +210,7 @@ def plotly_bar_chart(
                 y=df[y],
                 marker=dict(
                     color=df[y],
-                    colorscale="Reds",
+                    colorscale="Purples",
                     line=dict(color="rgba(255,255,255,0.4)", width=0.5),
                 ),
             )
@@ -242,8 +253,7 @@ def plotly_heatmap(
             z=pivot.values,
             x=pivot.columns,
             y=pivot.index,
-            colorscale="RdBu",
-            reversescale=True,
+            colorscale="Purples",
             colorbar=dict(title=z),
         )
     )
@@ -284,11 +294,11 @@ def plotly_gauge_chart(
             value=value,
             gauge={
                 "axis": {"range": [0, max_val]},
-                "bar": {"color": "#FF0000"},
+                "bar": {"color": "#8B5CF6"},
                 "steps": [
-                    {"range": [0, max_val * 0.5], "color": "#3e1a1a"},
-                    {"range": [max_val * 0.5, max_val * 0.8], "color": "#3b3414"},
-                    {"range": [max_val * 0.8, max_val], "color": "#123820"},
+                    {"range": [0, max_val * 0.5], "color": "#25193f"},
+                    {"range": [max_val * 0.5, max_val * 0.8], "color": "#3b2466"},
+                    {"range": [max_val * 0.8, max_val], "color": "#1e4c47"},
                 ],
             },
             title={"text": title},
@@ -376,7 +386,7 @@ def styled_dataframe(
     styler = df.style.format(precision=precision)
     if len(numeric_cols) > 0:
         styler = styler.background_gradient(
-            subset=numeric_cols, cmap="Reds", low=0.0, high=0.6
+            subset=numeric_cols, cmap="Purples", low=0.0, high=0.6
         )
 
     # Use Streamlit's native image column config when requested
@@ -398,4 +408,3 @@ def styled_keyword_chips(keywords: Sequence[str]) -> None:
     """Render a set of keywords as styled chips."""
     chips = "".join(f'<span class="keyword-chip">{kw}</span>' for kw in keywords)
     st.markdown(chips, unsafe_allow_html=True)
-

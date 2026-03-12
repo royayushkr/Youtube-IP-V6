@@ -1450,12 +1450,12 @@ def _render_outliers_shortcut(channel_df: pd.DataFrame, channel_title: str) -> N
     st.markdown(
         """
         <div class="yt-card" style="padding:1.15rem 1.2rem;">
-            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#94A3C7;margin-bottom:0.3rem;">Standalone Research Tool</div>
+            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#B8C1DA;margin-bottom:0.3rem;">Standalone Research Tool</div>
             <div style="font-size:24px;font-weight:800;color:#FFFFFF;line-height:1.15;margin-bottom:0.45rem;">
-                Outlier Finder now lives as its own premium research workspace.
+                Discover Breakout Videos In A Dedicated Research Workspace.
             </div>
             <div style="font-size:14px;color:#C8D1EA;max-width:760px;">
-                Search any niche, tighten the filters, and use the standalone page for cleaner breakout scans, structured AI research, standardized result cards, and methodology notes.
+                Search any niche, tighten the filters, and move into a standalone page built for result-first scanning, breakout snapshots, structured AI research, and methodology notes.
             </div>
         </div>
         """,
@@ -1469,7 +1469,7 @@ def _render_outliers_shortcut(channel_df: pd.DataFrame, channel_title: str) -> N
 
     action_cols = st.columns([1.3, 1.1])
     with action_cols[0]:
-        if st.button("Open Standalone Outlier Finder", type="primary", use_container_width=True):
+        if st.button("Open Outlier Finder", type="primary", use_container_width=True):
             _queue_outlier_finder_page(
                 prefill_query=suggested_query,
                 note=f"Prefilled from {channel_title}'s strongest recurring keywords. Adjust the niche query before running the scan.",
@@ -1486,7 +1486,7 @@ def _render_outliers_shortcut(channel_df: pd.DataFrame, channel_title: str) -> N
         <div class="yt-card" style="padding:0.9rem 1rem;">
             <div style="font-size:13px;color:#FFFFFF;font-weight:700;margin-bottom:0.35rem;">Why the standalone page is better for this job</div>
             <div style="font-size:13px;color:#C4CEE6;line-height:1.55;">
-                It supports stricter language filtering, exact versus broad search behavior, subscriber ranges, duration filtering, structured AI insights, and a dedicated methodology tab.
+                It puts results first, then the breakout pattern snapshot, then structured AI research. It also supports stricter language filtering, exact versus broad matching, subscriber ranges, and cleaner niche-scanning controls.
             </div>
         </div>
         """,

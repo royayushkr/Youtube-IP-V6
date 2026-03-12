@@ -1130,6 +1130,33 @@ def build_title_keyword_summary(frame: pd.DataFrame, top_n: int = 10) -> pd.Data
     return out
 
 
+def score_band_for_value(score: float) -> str:
+    numeric = float(score or 0.0)
+    if numeric >= 85:
+        return "Breakout"
+    if numeric >= 70:
+        return "Strong"
+    if numeric >= 55:
+        return "Promising"
+    return "Early Signal"
+
+
+def build_scan_quality_summary(frame: pd.DataFrame) -> Dict[str, float]:
+    if frame.empty:
+        return {
+            "high_language_match_share": 0.0,
+            "recent_upload_share": 0.0,
+            "strong_signal_share": 0.0,
+            "hidden_subscriber_share": 0.0,
+        }
+    return {
+        "high_language_match_share": float((frame["language_confidence_label"] == "High").mean()) * 100,
+        "recent_upload_share": float((frame["age_days"] <= 14).mean()) * 100,
+        "strong_signal_share": float((frame["outlier_score"] >= 75).mean()) * 100,
+        "hidden_subscriber_share": float(frame["hidden_subscriber_count"].fillna(False).mean()) * 100,
+    }
+
+
 @st.cache_data(ttl=OUTLIER_CACHE_TTL_SECONDS, show_spinner=False)
 def _search_outlier_videos_cached(request: OutlierSearchRequest) -> OutlierSearchResult:
     warnings: List[str] = []

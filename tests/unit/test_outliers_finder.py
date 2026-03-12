@@ -8,9 +8,11 @@ from src.services.outliers_finder import (
     OutlierSearchRequest,
     build_age_bucket_summary,
     build_duration_summary,
+    build_scan_quality_summary,
     build_title_pattern_summary,
     filter_candidates_by_subscriber_bucket,
     score_outlier_candidates_frame,
+    score_band_for_value,
 )
 
 
@@ -205,3 +207,20 @@ def test_summary_builders_keep_human_readable_ordering() -> None:
         "Explainer",
         "Versus",
     ]
+
+
+def test_scan_quality_summary_and_score_band_helpers_are_presentation_ready() -> None:
+    frame = _candidate_frame().copy()
+    frame["outlier_score"] = [91.0, 62.0, 74.0, 68.0]
+    frame["language_confidence_label"] = ["High", "Medium", "High", "Low"]
+
+    quality = build_scan_quality_summary(frame)
+
+    assert round(quality["high_language_match_share"], 1) == 50.0
+    assert round(quality["recent_upload_share"], 1) == 100.0
+    assert round(quality["strong_signal_share"], 1) == 25.0
+    assert round(quality["hidden_subscriber_share"], 1) == 25.0
+    assert score_band_for_value(91.0) == "Breakout"
+    assert score_band_for_value(74.0) == "Strong"
+    assert score_band_for_value(61.0) == "Promising"
+    assert score_band_for_value(42.0) == "Early Signal"

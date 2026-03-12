@@ -24,9 +24,11 @@ class OutlierAIReport:
     executive_headline: str
     key_takeaway: str
     confidence_label: str
+    confidence_notes: Tuple[str, ...]
     breakout_themes: Tuple[InsightCard, ...]
     title_patterns: Tuple[InsightCard, ...]
     repeatable_angles: Tuple[InsightCard, ...]
+    notable_anomalies: Tuple[InsightCard, ...]
     next_steps: Tuple[str, ...]
     warnings: Tuple[str, ...]
     raw_fallback: str = ""
@@ -96,9 +98,11 @@ def _fallback_report(provider: str, model: str, raw_text: str) -> OutlierAIRepor
         executive_headline="AI Research Available in Fallback Mode",
         key_takeaway=clipped or "The provider returned an unstructured answer, so the report is being shown in simplified form.",
         confidence_label="Low",
+        confidence_notes=("This output could not be parsed into the expected research schema.",),
         breakout_themes=tuple(),
         title_patterns=tuple(),
         repeatable_angles=tuple(),
+        notable_anomalies=tuple(),
         next_steps=tuple(),
         warnings=("Structured parsing failed; review the fallback summary before acting on it.",),
         raw_fallback=raw_text,
@@ -117,9 +121,11 @@ def _build_prompt(
         '  "executive_headline": "short string",\n'
         '  "key_takeaway": "one concise sentence",\n'
         '  "confidence_label": "High|Medium|Low",\n'
+        '  "confidence_notes": ["", ""],\n'
         '  "breakout_themes": [{"title":"", "body":"", "support":""}],\n'
         '  "title_patterns": [{"title":"", "body":"", "support":""}],\n'
         '  "repeatable_angles": [{"title":"", "body":"", "support":""}],\n'
+        '  "notable_anomalies": [{"title":"", "body":"", "support":""}],\n'
         '  "next_steps": ["", "", ""],\n'
         '  "warnings": ["", ""]\n'
         "}\n\n"
@@ -188,9 +194,11 @@ def _report_from_payload(provider: str, model: str, payload: Mapping[str, Any], 
         executive_headline=_safe_text(payload.get("executive_headline"), "What Is Breaking Out Right Now"),
         key_takeaway=_safe_text(payload.get("key_takeaway"), "The scanned cohort shows a few packaging and format patterns that are outperforming their peer set."),
         confidence_label=_safe_text(payload.get("confidence_label"), "Medium"),
+        confidence_notes=_string_tuple(payload.get("confidence_notes")),
         breakout_themes=_card_tuple(payload.get("breakout_themes")),
         title_patterns=_card_tuple(payload.get("title_patterns")),
         repeatable_angles=_card_tuple(payload.get("repeatable_angles")),
+        notable_anomalies=_card_tuple(payload.get("notable_anomalies")),
         next_steps=_string_tuple(payload.get("next_steps")),
         warnings=_string_tuple(payload.get("warnings")),
         raw_fallback=raw_text if not payload else "",
