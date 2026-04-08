@@ -1,11 +1,61 @@
+[server]
+enableStaticServing = true
+
 [client]
-# Keep the host toolbar out of the app chrome so page titles start cleanly below the viewport edge.
 toolbarMode = "minimal"
+
+[[theme.fontFaces]]
+family = "DMSans"
+url = "static/DMSans-Regular.ttf"
+style = "normal"
+weight = 400
+
+[[theme.fontFaces]]
+family = "DMSans"
+url = "static/DMSans-Medium.ttf"
+style = "normal"
+weight = 500
+
+[[theme.fontFaces]]
+family = "DMSans"
+url = "static/DMSans-SemiBold.ttf"
+style = "normal"
+weight = 600
+
+[[theme.fontFaces]]
+family = "DMSans"
+url = "static/DMSans-Bold.ttf"
+style = "normal"
+weight = 700
+
+[[theme.fontFaces]]
+family = "FiraCode"
+url = "static/FiraCode-Regular.ttf"
+style = "normal"
+weight = 400
+
+[[theme.fontFaces]]
+family = "FiraCode"
+url = "static/FiraCode-Medium.ttf"
+style = "normal"
+weight = 500
 
 [theme]
 base = "light"
-primaryColor = "#FF0000"
+primaryColor = "#FF0033"
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F9F9F9"
-textColor = "#0F0F0F"
-font = "sans serif"
+secondaryBackgroundColor = "#F9FAFB"
+textColor = "#111827"
+linkColor = "#E11D48"
+borderColor = "#E5E7EB"
+showWidgetBorder = true
+baseRadius = "0.75rem"
+font = "DMSans"
+headingFont = "DMSans"
+codeFont = "FiraCode"
+codeBackgroundColor = "#F3F4F6"
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#FBFBFC"
+secondaryBackgroundColor = "#F3F4F6"

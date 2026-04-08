@@ -88,9 +88,9 @@ def _inject_page_css() -> None:
             gap:0.5rem;
             padding:0.45rem 0.78rem;
             border-radius:999px;
-            background:rgba(255,255,255,0.05);
-            border:1px solid rgba(255,255,255,0.08);
-            color:#F7F8FC;
+            background:var(--app-accent-soft);
+            border:1px solid rgba(255, 0, 51, 0.12);
+            color:var(--app-accent-dark);
             font-size:12px;
             letter-spacing:0.1em;
             text-transform:uppercase;
@@ -100,20 +100,20 @@ def _inject_page_css() -> None:
             width:8px;
             height:8px;
             border-radius:999px;
-            background:linear-gradient(180deg,#FF0000,#00D4FF);
-            box-shadow:0 0 16px rgba(255,0,0,0.45);
+            background:var(--app-accent);
+            box-shadow:none;
         }
         .thumb-title {
-            font-family:"Inter",system-ui,sans-serif;
+            font-family:var(--app-font-display);
             font-size:clamp(34px,3.8vw,50px);
             line-height:1.02;
             font-weight:700;
-            color:#F7F8FC;
+            color:var(--app-text);
             letter-spacing:-0.04em;
-            margin-bottom:0.8rem;
+            margin-bottom:0.75rem;
         }
         .thumb-subtitle {
-            color:#B8C1DA;
+            color:var(--app-text-muted);
             font-size:16px;
             line-height:1.62;
             max-width:760px;
@@ -121,59 +121,57 @@ def _inject_page_css() -> None:
         }
         .thumb-card {
             border-radius:24px;
-            border:1px solid rgba(255,255,255,0.08);
-            background:
-                radial-gradient(circle at top left, rgba(255, 0, 0, 0.12) 0%, transparent 32%),
-                radial-gradient(circle at top right, rgba(0, 212, 255, 0.08) 0%, transparent 28%),
-                linear-gradient(180deg, rgba(22, 33, 62, 0.95) 0%, rgba(15, 15, 35, 0.98) 100%);
-            box-shadow:0 20px 46px rgba(3, 6, 20, 0.40);
+            border:1px solid var(--app-border);
+            background:#FFFFFF;
+            box-shadow:var(--app-shadow-md);
             padding:1.1rem 1.2rem;
             margin-bottom:1rem;
         }
         .thumb-card-title {
-            font-family:"Inter",system-ui,sans-serif;
-            color:#F7F8FC;
+            font-family:var(--app-font-display);
+            color:var(--app-text);
             font-size:20px;
             font-weight:700;
             margin-bottom:0.25rem;
         }
         .thumb-card-copy {
-            color:#B8C1DA;
+            color:var(--app-text-muted);
             font-size:13px;
             line-height:1.58;
         }
         .thumb-metric {
             padding:0.85rem 0.95rem;
             border-radius:18px;
-            background:rgba(255,255,255,0.03);
-            border:1px solid rgba(255,255,255,0.06);
+            background:var(--app-surface);
+            border:1px solid var(--app-border);
             margin-bottom:0.8rem;
         }
         .thumb-metric-label {
-            color:#8993B2;
+            color:var(--app-text-muted);
             font-size:11px;
             text-transform:uppercase;
             letter-spacing:0.08em;
             margin-bottom:0.22rem;
         }
         .thumb-metric-value {
-            color:#F7F8FC;
+            color:var(--app-text);
             font-size:22px;
             font-weight:700;
         }
         .thumb-gallery-card {
             padding:0.8rem;
             border-radius:18px;
-            border:1px solid rgba(255,255,255,0.06);
-            background:rgba(255,255,255,0.03);
+            border:1px solid var(--app-border);
+            background:#FFFFFF;
             margin-bottom:0.85rem;
+            box-shadow:var(--app-shadow-sm);
         }
         .thumb-empty {
             padding:1rem 1.1rem;
             border-radius:20px;
-            border:1px dashed rgba(255,255,255,0.12);
-            background:rgba(255,255,255,0.02);
-            color:#B8C1DA;
+            border:1px dashed rgba(17, 24, 39, 0.12);
+            background:#FFFFFF;
+            color:var(--app-text-muted);
             font-size:13px;
             line-height:1.6;
         }
@@ -219,6 +217,7 @@ def _render_hero() -> None:
         <div class="thumb-page">
             <div class="thumb-hero">
                 <div class="thumb-kicker"><span class="thumb-kicker-dot"></span>Workspace</div>
+                <div class="thumb-title">Thumbnail Studio</div>
                 <div class="thumb-subtitle">
                     Generate concepts with your AI providers or pull public thumbnail variants from a video URL — scoped to thumbnails only.
                 </div>
@@ -284,11 +283,11 @@ def _render_generate_tab() -> None:
         key_status = "Configured" if default_api_key else "Manual"
         st.markdown(
             f"""
-            <div class="thumb-metric">
-                <div class="thumb-metric-label">Provider Keys</div>
-                <div class="thumb-metric-value">{get_provider_key_count(provider)}</div>
-                <div style="font-size:12px;color:#B8C1DA;margin-top:0.25rem;">Default source: {key_status}</div>
-            </div>
+                <div class="thumb-metric">
+                    <div class="thumb-metric-label">Provider Keys</div>
+                    <div class="thumb-metric-value">{get_provider_key_count(provider)}</div>
+                    <div style="font-size:12px;color:var(--app-text-muted);margin-top:0.25rem;">Default source: {key_status}</div>
+                </div>
             """,
             unsafe_allow_html=True,
         )

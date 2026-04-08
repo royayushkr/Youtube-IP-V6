@@ -8,6 +8,8 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
+from dashboard.components.layout import render_section_header
+
 
 # Creator Insights palette (neutral-first YouTube-light shell)
 YT_COLORWAY: List[str] = [
@@ -34,7 +36,7 @@ PLOTLY_DASHBOARD_TEMPLATE: Dict[str, Any] = {
         "plot_bgcolor": "#FFFFFF",
         "font": {
             "color": "#606060",
-            "family": "Inter, system-ui, sans-serif",
+            "family": "DMSans, system-ui, sans-serif",
         },
         "xaxis": {
             "gridcolor": "#E5E5E5",
@@ -67,7 +69,7 @@ def apply_dashboard_chart_theme(fig: go.Figure) -> go.Figure:
     fig.update_layout(
         title_font=dict(
             size=17,
-            family="Inter, system-ui, sans-serif",
+            family="DMSans, system-ui, sans-serif",
             color="#0F0F0F",
         ),
         legend=dict(
@@ -147,17 +149,9 @@ def kpi_row(metrics: List[Dict[str, Any]]) -> None:
 
 
 def section_header(title: str, subtitle: Optional[str] = None, icon: Optional[str] = None) -> None:
-    """Render a styled text-only section header with optional subtitle."""
-    st.markdown(
-        f'<div class="yt-section-header"><span>{title}</span></div>',
-        unsafe_allow_html=True,
-    )
+    """Render a shared section header using the app shell's design system."""
+    render_section_header(title, subtitle)
     st.markdown('<div class="yt-section-underline"></div>', unsafe_allow_html=True)
-    if subtitle:
-        st.markdown(
-            "<p style='color:#667085;font-size:13px;line-height:1.55;font-weight:500;'>" + subtitle + "</p>",
-            unsafe_allow_html=True,
-        )
 
 
 def animated_counter(value: float, label: str) -> None:

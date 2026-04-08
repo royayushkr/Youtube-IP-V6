@@ -7,27 +7,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from dashboard.components.layout import render_page_hero
+from dashboard.components.layout import render_page_header
 from dashboard.components.sidebar import render_sidebar_footer, render_sidebar_header
 from dashboard.components.theme import inject_shared_theme
 from dashboard.views import channel_analysis, channel_insights, outlier_finder, tools, ytuber
 
 
 def _render_app_shell(page: str) -> None:
-    """Global product hero + per-page context (Creator Insights UX)."""
-    st.markdown(
-        """
-        <div class="fade-in yt-app-hero-shell" style="margin-bottom:0.25rem;">
-            <div class="yt-page-title">YouTube Creator Insights</div>
-            <div class="yt-page-subtitle">
-                YouTube IP V6 · Purdue University × Google — cross-channel analytics, benchmarking,
-                public-channel intelligence, outlier research, and creator-ready media workflows.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    render_page_hero(page)
+    """Global product header + per-page context."""
+    render_page_header(page, centered=True)
 
 
 def _cleanup_retired_session_state() -> None:
@@ -64,7 +52,7 @@ def _page_media_lab() -> None:
 
 
 def _page_deployment() -> None:
-    st.title("Deployment")
+    _render_app_shell("Deployment")
     st.markdown(
         """
         Deploy this repo directly from GitHub to Streamlit Community Cloud.

@@ -246,10 +246,6 @@ def _inject_ytuber_css() -> None:
     st.markdown(
         """
         <style>
-        [data-testid="stAppViewBlockContainer"] {
-            max-width: 1240px !important;
-            padding-top: 1.35rem !important;
-        }
         .ytuber-hero {
             max-width: 860px;
             margin: 0 auto 1rem;
@@ -284,7 +280,7 @@ def _inject_ytuber_css() -> None:
             margin-bottom: 0.5rem;
         }
         .ytuber-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: clamp(32px, 4vw, 50px);
             line-height: 1.02;
             font-weight: 800;
@@ -485,7 +481,7 @@ def _inject_ytuber_css() -> None:
             gap: 0.75rem;
         }
         .ytuber-score-value {
-            font-family: "IBM Plex Mono", "Inter", monospace;
+            font-family: var(--app-font-mono);
             font-size: 38px;
             line-height: 1;
             font-weight: 800;

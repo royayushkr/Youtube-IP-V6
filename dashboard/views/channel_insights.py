@@ -70,7 +70,7 @@ def _inject_channel_insights_css() -> None:
             box-shadow: none;
         }
         .ci-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: clamp(34px, 3.8vw, 50px);
             line-height: 1.02;
             font-weight: 800;
@@ -95,7 +95,7 @@ def _inject_channel_insights_css() -> None:
             margin-bottom: 1rem;
         }
         .ci-card-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             color: #101828;
             font-size: 20px;
             font-weight: 700;

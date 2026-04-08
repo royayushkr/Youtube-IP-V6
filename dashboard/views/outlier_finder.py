@@ -165,7 +165,7 @@ def _inject_outlier_css() -> None:
             box-shadow: none;
         }
         .outlier-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: clamp(32px, 4vw, 48px);
             line-height: 1.05;
             font-weight: 800;
@@ -199,7 +199,7 @@ def _inject_outlier_css() -> None:
             margin-bottom: 1.1rem;
         }
         .outlier-shell-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: 20px;
             font-weight: 700;
             color: #101828;
@@ -287,7 +287,7 @@ def _inject_outlier_css() -> None:
             margin-bottom: 0.3rem;
         }
         .outlier-summary-value {
-            font-family: "IBM Plex Mono", "Inter", monospace;
+            font-family: var(--app-font-mono);
             font-size: 30px;
             font-weight: 700;
             line-height: 1.05;
@@ -330,7 +330,7 @@ def _inject_outlier_css() -> None:
             gap: 0.8rem;
         }
         .outlier-result-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: 17px;
             font-weight: 800;
             color: #101828;
@@ -356,7 +356,7 @@ def _inject_outlier_css() -> None:
             border: 1px solid rgba(255, 0, 0, 0.16);
         }
         .outlier-score-value {
-            font-family: "IBM Plex Mono", "Inter", monospace;
+            font-family: var(--app-font-mono);
             font-size: 22px;
             font-weight: 700;
             color: #FF0000;
@@ -414,7 +414,7 @@ def _inject_outlier_css() -> None:
             padding: 0.1rem 0 0.2rem;
         }
         .outlier-chart-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             color: #101828;
             font-size: 17px;
             font-weight: 700;
@@ -427,7 +427,7 @@ def _inject_outlier_css() -> None:
             margin-bottom: 0.45rem;
         }
         .outlier-ai-section-head {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: 24px;
             font-weight: 800;
             color: #0F0F0F;
@@ -443,7 +443,7 @@ def _inject_outlier_css() -> None:
             margin-bottom: 1rem;
         }
         .outlier-ai-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: 22px;
             font-weight: 800;
             color: #101828;
@@ -498,7 +498,7 @@ def _inject_outlier_css() -> None:
             border-bottom: none;
         }
         .outlier-ai-item-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: 13px;
             font-weight: 700;
             color: #0F0F0F;
@@ -528,7 +528,7 @@ def _inject_outlier_css() -> None:
             flex-direction: column;
         }
         .outlier-ai-card-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: 14px;
             font-weight: 700;
             color: #0F0F0F;
@@ -584,7 +584,7 @@ def _inject_outlier_css() -> None:
         }
         .outlier-quality-value {
             color: #101828;
-            font-family: "IBM Plex Mono", "Inter", monospace;
+            font-family: var(--app-font-mono);
             font-size: 24px;
             font-weight: 700;
             line-height: 1.05;
@@ -605,7 +605,7 @@ def _inject_outlier_css() -> None:
             margin-bottom: 1rem;
         }
         .outlier-empty-title {
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
             font-size: 18px;
             font-weight: 800;
             color: #101828;
@@ -626,7 +626,7 @@ def _inject_outlier_css() -> None:
         .outlier-method-card h4 {
             margin: 0 0 0.4rem;
             color: #0F0F0F;
-            font-family: "Inter", system-ui, sans-serif;
+            font-family: var(--app-font-display);
         }
         .outlier-method-card p,
         .outlier-method-card li {
