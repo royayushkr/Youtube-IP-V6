@@ -92,14 +92,13 @@ def _inject_outlier_css() -> None:
         """
         <style>
         [data-testid="stForm"] {
-            background: linear-gradient(165deg, rgba(22, 33, 62, 0.45) 0%, rgba(15, 15, 35, 0.88) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,248,0.98) 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
             border-radius: 20px;
             padding: 1.5rem 1.5rem 1.2rem;
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
             margin: 0 auto 1.6rem;
             max-width: var(--app-command-width);
-            backdrop-filter: blur(12px);
         }
         [data-testid="stForm"] [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
             row-gap: 0.95rem;
@@ -109,9 +108,9 @@ def _inject_outlier_css() -> None:
             padding: 0.05rem 0.15rem;
         }
         [data-testid="stExpander"] {
-            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
             border-radius: 14px !important;
-            background: rgba(15, 15, 35, 0.5) !important;
+            background: #FFFFFF !important;
             margin-top: 0.15rem;
         }
         .outlier-page {
@@ -129,9 +128,9 @@ def _inject_outlier_css() -> None:
             gap: 0.5rem;
             padding: 0.45rem 0.8rem;
             border-radius: 999px;
-            background: rgba(255, 0, 0, 0.12);
-            border: 1px solid rgba(255, 0, 0, 0.35);
-            color: #FF8888;
+            background: rgba(255, 0, 51, 0.08);
+            border: 1px solid rgba(255, 0, 51, 0.16);
+            color: #C62828;
             font-size: 12px;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -141,15 +140,15 @@ def _inject_outlier_css() -> None:
             width: 8px;
             height: 8px;
             border-radius: 999px;
-            background: #FF0000;
-            box-shadow: 0 0 14px rgba(255, 0, 0, 0.55);
+            background: linear-gradient(180deg, #FF0033 0%, #D92D20 100%);
+            box-shadow: 0 0 14px rgba(255, 0, 51, 0.24);
         }
         .outlier-title {
             font-family: "Inter", system-ui, sans-serif;
             font-size: clamp(32px, 4vw, 48px);
             line-height: 1.05;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             letter-spacing: -0.03em;
             margin-bottom: 0.85rem;
         }
@@ -158,7 +157,7 @@ def _inject_outlier_css() -> None:
             margin: 0 auto;
             font-size: 16px;
             line-height: 1.65;
-            color: #B0B0B0;
+            color: #667085;
         }
         .outlier-trust-row {
             display: flex;
@@ -170,9 +169,9 @@ def _inject_outlier_css() -> None:
         .outlier-pill {
             padding: 0.4rem 0.78rem;
             border-radius: 999px;
-            background: rgba(22, 33, 62, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            color: #d0d0e0;
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            color: #475467;
             font-size: 12px;
         }
         .outlier-shell-head {
@@ -182,36 +181,36 @@ def _inject_outlier_css() -> None:
             font-family: "Inter", system-ui, sans-serif;
             font-size: 20px;
             font-weight: 700;
-            color: #FFFFFF;
+            color: #101828;
             margin-bottom: 0.25rem;
         }
         .outlier-shell-copy {
-            color: #B0B0B0;
+            color: #667085;
             font-size: 13px;
             line-height: 1.55;
             max-width: 620px;
         }
         .outlier-helper {
-            color: #97A2C3;
+            color: #667085;
             font-size: 12px;
             line-height: 1.55;
             margin-top: 0.75rem;
         }
         .outlier-inline-field-label {
-            color: #B8C1DA;
+            color: #475467;
             font-size: 14px;
             font-weight: 600;
             margin-bottom: 0.45rem;
         }
         .outlier-row-label {
-            color: #8E9AC0;
+            color: #667085;
             font-size: 11px;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             margin: 0 0 0.5rem;
         }
         .outlier-visibility-copy {
-            color: #8E9AC0;
+            color: #667085;
             font-size: 12px;
             line-height: 1.5;
             margin-top: 0.35rem;
@@ -226,18 +225,18 @@ def _inject_outlier_css() -> None:
             padding: 0.55rem 0.8rem;
             margin: 0 auto 1.05rem;
             border-radius: 999px;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.28);
-            color: #e2e8f0;
+            background: rgba(255, 0, 51, 0.08);
+            border: 1px solid rgba(255, 0, 51, 0.14);
+            color: #B42318;
             font-size: 12px;
         }
         .outlier-panel-note {
             margin-top: 1rem;
             padding: 0.8rem 0.95rem;
             border-radius: 14px;
-            border: 1px solid rgba(0, 212, 255, 0.25);
-            background: rgba(15, 15, 35, 0.75);
-            color: #d0d0e0;
+            border: 1px solid rgba(255, 0, 51, 0.12);
+            background: #FFFFFF;
+            color: #475467;
             font-size: 13px;
             line-height: 1.6;
         }
@@ -245,7 +244,7 @@ def _inject_outlier_css() -> None:
             margin-top: 2rem;
         }
         .outlier-results-summary {
-            color: #B8C1DA;
+            color: #667085;
             font-size: 13px;
             line-height: 1.55;
             margin-top: 0.18rem;
@@ -254,13 +253,13 @@ def _inject_outlier_css() -> None:
             border-radius: 16px;
             min-height: 156px;
             padding: 1rem 1rem 0.95rem;
-            background: linear-gradient(160deg, rgba(22, 33, 62, 0.5) 0%, rgba(15, 15, 35, 0.92) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
             margin-bottom: 0.9rem;
         }
         .outlier-summary-label {
-            color: #8b8ba8;
+            color: #667085;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.11em;
@@ -271,10 +270,10 @@ def _inject_outlier_css() -> None:
             font-size: 30px;
             font-weight: 700;
             line-height: 1.05;
-            color: #00D4FF;
+            color: #D92D20;
         }
         .outlier-summary-detail {
-            color: #B0B0B0;
+            color: #667085;
             font-size: 12px;
             margin-top: 0.25rem;
             line-height: 1.5;
@@ -282,9 +281,9 @@ def _inject_outlier_css() -> None:
         .outlier-result-card {
             border-radius: 16px;
             overflow: hidden;
-            background: linear-gradient(180deg, rgba(22, 33, 62, 0.4) 0%, rgba(15, 15, 35, 0.95) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             margin-bottom: 1rem;
             min-height: 455px;
             display: flex;
@@ -295,7 +294,7 @@ def _inject_outlier_css() -> None:
             height: 185px;
             object-fit: cover;
             display: block;
-            background: rgba(255,255,255,0.03);
+            background: rgba(248, 250, 252, 1);
         }
         .outlier-result-body {
             padding: 1rem 1rem 1rem;
@@ -313,7 +312,7 @@ def _inject_outlier_css() -> None:
             font-family: "Inter", system-ui, sans-serif;
             font-size: 17px;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             line-height: 1.32;
             display: -webkit-box;
             -webkit-box-orient: vertical;
@@ -322,7 +321,7 @@ def _inject_outlier_css() -> None:
             min-height: 46px;
         }
         .outlier-result-channel {
-            color: #67e8f9;
+            color: #D92D20;
             font-size: 12px;
             margin-top: 0.2rem;
         }
@@ -346,7 +345,7 @@ def _inject_outlier_css() -> None:
             font-size: 10px;
             letter-spacing: 0.11em;
             text-transform: uppercase;
-            color: #8b8ba8;
+            color: #667085;
             margin-top: 0.12rem;
         }
         .outlier-score-band {
@@ -363,15 +362,15 @@ def _inject_outlier_css() -> None:
         .outlier-metric-chip {
             padding: 0.32rem 0.6rem;
             border-radius: 999px;
-            background: rgba(22, 33, 62, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            color: #d0d0e0;
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            color: #475467;
             font-size: 11px;
         }
         .outlier-bullets {
             margin: 0;
             padding-left: 1rem;
-            color: #d0d0e0;
+            color: #475467;
             font-size: 12px;
             line-height: 1.55;
         }
@@ -383,7 +382,7 @@ def _inject_outlier_css() -> None:
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            color: #00D4FF !important;
+            color: #D92D20 !important;
             font-weight: 700;
             font-size: 12px;
             padding-top: 0.7rem;
@@ -395,13 +394,13 @@ def _inject_outlier_css() -> None:
         }
         .outlier-chart-title {
             font-family: "Inter", system-ui, sans-serif;
-            color: #FFFFFF;
+            color: #101828;
             font-size: 17px;
             font-weight: 700;
             margin-bottom: 0.2rem;
         }
         .outlier-chart-copy {
-            color: #B0B0B0;
+            color: #667085;
             font-size: 12px;
             line-height: 1.5;
             margin-bottom: 0.45rem;
@@ -410,46 +409,46 @@ def _inject_outlier_css() -> None:
             font-family: "Inter", system-ui, sans-serif;
             font-size: 26px;
             font-weight: 800;
-            color: #f8fafc;
+            color: #101828;
             margin: 2rem 0 0.35rem;
             padding-bottom: 0.4rem;
-            border-bottom: 3px solid rgba(0, 212, 255, 0.55);
+            border-bottom: 3px solid rgba(255, 0, 51, 0.3);
             letter-spacing: -0.02em;
         }
         .outlier-ai-hero {
             border-radius: 16px;
             padding: 1.1rem 1.15rem;
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.08) 0%, rgba(15, 15, 35, 0.92) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-left: 4px solid #00D4FF;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-left: 4px solid #FF0033;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             margin-bottom: 1rem;
         }
         .outlier-ai-title {
             font-family: "Inter", system-ui, sans-serif;
             font-size: 22px;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             margin-bottom: 0.35rem;
             line-height: 1.25;
         }
         .outlier-ai-copy {
-            color: #d0d0e0;
+            color: #475467;
             font-size: 14px;
             line-height: 1.6;
         }
         .outlier-ai-meta {
             margin-top: 0.4rem;
-            color: #8b8ba8;
+            color: #667085;
             font-size: 12px;
         }
         .outlier-ai-card {
             border-radius: 16px;
             min-height: 188px;
             padding: 1rem 1rem 0.95rem;
-            background: rgba(15, 15, 35, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             margin-bottom: 0.9rem;
             display: flex;
             flex-direction: column;
@@ -458,17 +457,17 @@ def _inject_outlier_css() -> None:
             font-family: "Inter", system-ui, sans-serif;
             font-size: 16px;
             font-weight: 800;
-            color: #FF6090;
+            color: #B42318;
             margin-bottom: 0.35rem;
         }
         .outlier-ai-card-body {
-            color: #d0d0e0;
+            color: #475467;
             font-size: 13px;
             line-height: 1.58;
             flex: 1;
         }
         .outlier-ai-card-support {
-            color: #8b8ba8;
+            color: #667085;
             font-size: 12px;
             line-height: 1.45;
             margin-top: 0.5rem;
@@ -487,25 +486,25 @@ def _inject_outlier_css() -> None:
         .outlier-quality-metric {
             border-radius: 14px;
             padding: 0.82rem 0.85rem;
-            background: rgba(15, 15, 35, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
         }
         .outlier-quality-label {
-            color: #8b8ba8;
+            color: #667085;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             margin-bottom: 0.25rem;
         }
         .outlier-quality-value {
-            color: #FFFFFF;
+            color: #101828;
             font-family: "IBM Plex Mono", "Inter", monospace;
             font-size: 24px;
             font-weight: 700;
             line-height: 1.05;
         }
         .outlier-quality-note {
-            color: #B0B0B0;
+            color: #667085;
             font-size: 12px;
             line-height: 1.6;
             margin-top: auto;
@@ -514,38 +513,38 @@ def _inject_outlier_css() -> None:
         .outlier-empty-card {
             border-radius: 16px;
             padding: 1.1rem 1.15rem;
-            background: rgba(15, 15, 35, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             margin-bottom: 1rem;
         }
         .outlier-empty-title {
             font-family: "Inter", system-ui, sans-serif;
             font-size: 18px;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             margin-bottom: 0.25rem;
         }
         .outlier-empty-copy {
-            color: #B0B0B0;
+            color: #667085;
             font-size: 13px;
             line-height: 1.58;
         }
         .outlier-method-card {
             border-radius: 16px;
             padding: 1rem 1rem 0.9rem;
-            background: rgba(15, 15, 35, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
             margin-bottom: 0.8rem;
         }
         .outlier-method-card h4 {
             margin: 0 0 0.4rem;
-            color: #00D4FF;
+            color: #D92D20;
             font-family: "Inter", system-ui, sans-serif;
         }
         .outlier-method-card p,
         .outlier-method-card li {
-            color: #d0d0e0;
+            color: #475467;
             font-size: 13px;
             line-height: 1.58;
         }
@@ -555,7 +554,7 @@ def _inject_outlier_css() -> None:
             border-radius: 14px;
             border: 1px solid rgba(255, 0, 0, 0.2);
             background: rgba(255, 0, 0, 0.06);
-            color: #B0B0B0;
+            color: #667085;
             font-size: 12px;
             line-height: 1.62;
         }

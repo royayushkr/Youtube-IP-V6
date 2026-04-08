@@ -1,8 +1,8 @@
 # YouTube IP Project Brief And Retrospective
 
-This document combines the original project brief with a retrospective look at how the product evolved from V1 through V5.
+This document combines the original project brief with a retrospective look at how the product evolved from V1 through V6.
 
-It is intentionally narrative-first. For the current tab-by-tab and service-by-service runtime explanation of V5, use [Architecture](ARCHITECTURE.md).
+It is intentionally narrative-first. For the current tab-by-tab and service-by-service runtime explanation of V6, use [Architecture](ARCHITECTURE.md).
 
 ## Original Problem Statement
 
@@ -32,10 +32,10 @@ The initial stack direction, which stayed influential through every version, was
 
 | Metric | Value |
 | --- | --- |
-| Documented deployed versions | `5` |
-| Live deployed Streamlit apps | `5` |
-| Current V5 sidebar pages | `7` |
-| Stable primary data paths in V5 | `2` |
+| Documented deployed versions | `6` |
+| Live deployed Streamlit apps | `6` |
+| Current V6 sidebar pages | `6` |
+| Stable primary data paths in V6 | `2` |
 | Current Channel Insights topic modes | `2` |
 
 ## Product Journey Across Versions
@@ -46,6 +46,7 @@ flowchart LR
     V2 --> V3["V3<br/>product shell clarity"]
     V3 --> V4["V4<br/>deepest intelligence layer"]
     V4 --> V5["V5<br/>cleanup + consolidation"]
+    V5 --> V6["V6<br/>production surface + Media Lab"]
 ```
 
 ### V1: Analytics Prototype
@@ -114,30 +115,42 @@ V5 intentionally:
 - removes Google OAuth and owner-only analytics
 - keeps `Channel Insights`, but makes it public-only
 - keeps `Ytuber`, `Tools`, and `Deployment`
-- renames page 3 to `Thumbnails`
+- narrows page 3 into `Thumbnails`
 - keeps optional BERTopic beta modeling as a guarded, explicit path
 - improves documentation so the project can be presented clearly end to end
 
+### V6: Current Production Surface
+
+V6 keeps the V5 public-only analysis posture, then reshapes the live shell around a cleaner production workflow:
+
+- light YouTube-style UI and better shell consistency
+- `Media Lab` replaces the old separate `Thumbnails` and `Tools` pages
+- transcript extraction, public thumbnail export, AI thumbnail generation, MP4 prep, and MP3 prep all live in one single-video workflow
+- active `Batch` and `Playlist` behavior are removed from the live surface
+- routing and deployment are simplified around Streamlit-native multipage navigation and clearer repo/deploy targets
+
 ## What We Tried, Learned, And Changed
 
-| Theme | What We Tried | What We Learned | What V5 Keeps |
+| Theme | What We Tried | What We Learned | What Current V6 Keeps |
 | --- | --- | --- | --- |
 | Cross-channel analytics | benchmarking with committed CSV datasets | this remained valuable in every version | `Channel Analysis` |
-| Creator suite breadth | larger all-in-one workflow surfaces in V2 | breadth is useful, but only if the surface stays understandable | `Ytuber`, `Tools`, `Deployment` remain, but the shell is clearer |
-| Mixed recommendations page | blending dataset guidance with creative tooling | this created overlap with analysis pages | V5 narrows page 3 to `Thumbnails` |
+| Creator suite breadth | larger all-in-one workflow surfaces in V2 | breadth is useful, but only if the surface stays understandable | `Ytuber` remains, but the shell is clearer |
+| Mixed recommendations page | blending dataset guidance with creative tooling | this created overlap with analysis pages | V6 ultimately consolidates the creative/public-asset side into `Media Lab` |
 | Deep tracked-channel intelligence | `Channel Insights` with snapshots and structured metrics | this was one of the strongest additions in the whole project | public-only `Channel Insights` remains central |
-| Owner-only analytics | Google OAuth plus private metrics | valuable, but raised deployment and maintenance overhead | removed in V5 |
-| Global helper UI | sidebar `Assistant` | useful in concept, but expensive in complexity versus direct page docs | removed in V5 |
-| Optional modeling in production | BERTopic beta via external artifact flow | feasible if it stays optional and lazy-loaded | retained in V5 |
+| Owner-only analytics | Google OAuth plus private metrics | valuable, but raised deployment and maintenance overhead | removed before V6 |
+| Global helper UI | sidebar `Assistant` | useful in concept, but expensive in complexity versus direct page docs | removed before V6 |
+| Optional modeling in production | BERTopic beta via external artifact flow | feasible if it stays optional and lazy-loaded | retained in V6 |
+| Separate media pages | `Thumbnails` + `Tools` | distinct pages can be powerful, but they duplicated context and navigation weight | merged into `Media Lab` |
 
 ## What Was Removed Or Simplified And Why
 
 | Capability | Why It Was Added Originally | Why It Was Reduced Later |
 | --- | --- | --- |
 | Sidebar `Assistant` | give users a global help layer across pages | duplicated explanation work that stronger docs and page-focused UX could handle more simply |
-| Google OAuth / owner analytics | unlock private creator metrics in `Channel Insights` | required more secrets, more branching, and more deployment overhead than the V5 public-only posture wanted |
-| Broader `Recommendations` framing | combine strategy guidance with creative tooling | too much overlap with `Channel Analysis` and `Channel Insights`; V5 makes the page purpose narrower |
-| Ever-expanding creator-suite surface | explore many ideas quickly during product growth | made the product harder to explain cleanly to new readers and evaluators |
+| Google OAuth / owner analytics | unlock private creator metrics in `Channel Insights` | required more secrets, more branching, and more deployment overhead than the public-only posture wanted |
+| Broader `Recommendations` framing | combine strategy guidance with creative tooling | too much overlap with `Channel Analysis` and `Channel Insights`; later versions made page 3 progressively narrower |
+| Separate `Thumbnails` and `Tools` pages | keep AI creation and public asset export as distinct surfaces | made the live shell feel heavier than the actual user journey needed; V6 merges them into `Media Lab` |
+| Active `Batch` and `Playlist` flows in the live shell | support broader export workflows | useful, but added complexity and edge cases to the core deployable surface |
 
 ## What Stayed True From Start To Finish
 
@@ -149,18 +162,19 @@ Across all versions, the project kept returning to the same durable principles:
 - package the work in a way creators can actually use
 - keep Streamlit as the fastest path to an interactive intelligence product
 
-## Current V5 Position
+## Current V6 Position
 
-V5 is the clearest version to present because it balances ambition with deployability:
+V6 is the clearest version to present because it balances ambition with deployability:
 
 - it still shows the full scope of the project
 - it keeps the strongest live workflows
 - it preserves the modeling story
-- it retains the AI suite pages
-- it removes the heaviest operational branching from V4
+- it retains the creator workspace through `Ytuber`
+- it simplifies the media workflow into `Media Lab`
+- it keeps the heaviest operational branching from V4 out of the live surface
 - it explains the complete journey from prototype to current product
 
-The companion implementation view for that final product now lives in [Architecture](ARCHITECTURE.md), which explains the current `Channel Insights`, `Thumbnails`, `Outlier Finder`, `Ytuber`, `Tools`, and `Deployment` workflows in operational detail.
+The companion implementation view for that final product now lives in [Architecture](ARCHITECTURE.md), which explains the current `Channel Insights`, `Media Lab`, `Outlier Finder`, `Ytuber`, and `Deployment` workflows in operational detail.
 
 ## Presentation-Ready Summary
 
@@ -170,7 +184,8 @@ If this repo is being used for a final presentation, the cleanest narrative is:
 2. We expanded into a broad creator operating system to explore the space.
 3. We productized the workflows into clearer pages and better runtime structure.
 4. We pushed deepest in V4 with tracked-channel intelligence, private analytics, and optional BERTopic runtime.
-5. We consolidated into V5 so the final story is easier to deploy, easier to explain, and still representative of the most valuable work.
+5. We consolidated into V5 so the story became easier to deploy and explain.
+6. We refined the live product in V6 so the current release is lighter, cleaner, and easier to use without losing the strongest analytical depth.
 
 ## Live Deployment Timeline
 
@@ -181,9 +196,10 @@ If this repo is being used for a final presentation, the cleanest narrative is:
 | `V3` | [youtube-ip-v3.streamlit.app](https://youtube-ip-v3.streamlit.app/) |
 | `V4` | [youtube-ip-v4.streamlit.app](https://youtube-ip-v4.streamlit.app/) |
 | `V5` | [youtube-ip-v5.streamlit.app](https://youtube-ip-v5.streamlit.app/) |
+| `V6` | [youtube-ip-v6.streamlit.app](https://youtube-ip-v6.streamlit.app/) |
 
 ## Where To Go Next
 
 - [README](../README.md) for the cross-version presentation overview
-- [Architecture](ARCHITECTURE.md) for runtime, data, and topic-model flowcharts
+- [Architecture](ARCHITECTURE.md) for runtime, data, topic-model, and `Media Lab` flowcharts
 - [Deployment And Versions](DEPLOYMENT_AND_VERSIONS.md) for secrets, deploy targets, and version-by-version comparisons

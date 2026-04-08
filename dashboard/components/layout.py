@@ -13,12 +13,12 @@ PAGE_CONTEXT: Dict[str, Tuple[str, str]] = {
         "Committed CSV benchmarks — filters, engagement, and chart-backed summaries.",
     ),
     "Channel Insights": (
-        "Owned-channel depth",
+        "Public channel depth",
         "BERTopic-ready topics, momentum views, and refresh-to-disk SQLite snapshots.",
     ),
-    "Thumbnails": (
-        "Creative lab",
-        "Score against your dataset or generate/export thumbnails with Gemini or OpenAI.",
+    "Media Lab": (
+        "Creator utilities",
+        "Transcripts, thumbnails, MP4 downloads, and MP3 exports in one single-video workspace.",
     ),
     "Outlier Finder": (
         "Breakout research",
@@ -27,10 +27,6 @@ PAGE_CONTEXT: Dict[str, Tuple[str, str]] = {
     "Ytuber": (
         "Command center",
         "Channel search, audits, AI studio, calendar — jump to Outlier Finder in one click.",
-    ),
-    "Tools": (
-        "Media & utilities",
-        "Transcription, shorts helpers, and other workflows (ffmpeg where noted).",
     ),
 }
 

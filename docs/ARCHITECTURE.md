@@ -1,15 +1,14 @@
-# YouTube IP V5 Architecture
+# YouTube IP V6 Architecture
 
-This document is the current-runtime reference for V5. The version-history story lives in the README and project brief; this file focuses on how the deployed app works today, page by page and service by service.
+This document is the current-runtime reference for V6. The version-history story lives in the README and project brief; this file focuses on how the deployed app works today, page by page and service by service.
 
 ## Deep-Dive Guide
 
 - [Channel Analysis](#channel-analysis)
 - [Channel Insights](#channel-insights)
-- [Thumbnails](#thumbnails)
+- [Media Lab](#media-lab)
 - [Outlier Finder](#outlier-finder)
 - [Ytuber](#ytuber)
-- [Tools](#tools)
 - [Deployment](#deployment)
 - [Model-Backed Topic Artifact Flow](#model-backed-topic-artifact-flow)
 
@@ -18,13 +17,12 @@ This document is the current-runtime reference for V5. The version-history story
 | Item | Count | Notes |
 | --- | --- | --- |
 | Streamlit entrypoints | `2` | `streamlit_app.py` and `dashboard/app.py` |
-| Current sidebar destinations | `7` | `Channel Analysis`, `Channel Insights`, `Thumbnails`, `Outlier Finder`, `Ytuber`, `Tools`, `Deployment` |
+| Current sidebar destinations | `6` | `Channel Analysis`, `Channel Insights`, `Media Lab`, `Outlier Finder`, `Ytuber`, `Deployment` |
 | Primary runtime data paths | `2` | bundled GitHub CSVs and live API-backed requests |
 | Live provider families | `3` | `YouTube`, `Gemini`, `OpenAI` |
 | Channel Insights topic modes | `2` | `Heuristic Topics` and `Model-Backed Topics (Beta)` |
 | Channel Insights tabs | `6` | `Overview`, `Topic Trends`, `Formats & Patterns`, `Outliers`, `Next Topics`, `History` |
-| Thumbnails tabs | `2` | `Generate`, `Download From URL` |
-| Tools tabs | `3` | `Single`, `Batch`, `Playlist` |
+| Media Lab workflow sections | `5` | `Video Lookup`, `Transcript`, `Thumbnail Studio`, `Audio Download`, `Video Download` |
 | Ytuber workspace modules | `8` | `AI Studio`, `Overview`, `Channel Audit`, `Keyword Intel`, `Outliers Finder`, `Title & SEO Lab`, `Competitor Benchmark`, `Content Planner` |
 | Main Outlier Finder post-search sections | `4` | `Top Outliers In This Scan`, `Breakout Snapshot`, `AI Research`, `How This Works` |
 
@@ -32,22 +30,21 @@ This document is the current-runtime reference for V5. The version-history story
 
 1. `Channel Analysis`
 2. `Channel Insights`
-3. `Thumbnails`
+3. `Media Lab`
 4. `Outlier Finder`
 5. `Ytuber`
-6. `Tools`
-7. `Deployment`
+6. `Deployment`
 
-V5 removes the sidebar `Assistant` and removes Google OAuth from `Channel Insights`, but keeps the broader AI suite pages.
+V6 keeps the V5 public-only `Channel Insights` posture, but replaces the old separate `Thumbnails` and `Tools` pages with one consolidated `Media Lab` workflow.
 
-## Full V5 Runtime And Data Pipeline
+## Full V6 Runtime And Data Pipeline
 
 ```mermaid
 flowchart TD
     A["Bundled GitHub CSV data<br/>data/youtube api data/*.csv"] --> B["streamlit_app.py"]
     U["User actions"] --> B
     B --> C["dashboard/app.py"]
-    C --> D["dashboard/components/sidebar.py"]
+    C --> D["Streamlit navigation + sidebar"]
     D --> E["Page views"]
 
     S["Streamlit secrets / env"] --> F["src/utils/api_keys.py"]
@@ -70,8 +67,15 @@ flowchart TD
     M4 --> M5["heuristic or BERTopic assignment"]
     M5 --> M6["metrics + scoring + outliers + snapshots"]
 
+    G --> P["Media Lab service pipeline"]
+    H --> P
+    P --> P1["fetch metadata + transcripts + formats + thumbnail preview"]
+    P1 --> P2["prepare transcript / public thumbnail / MP3 / MP4 artifacts"]
+    P2 --> P3["AI thumbnail generation + error mapping + progress reporting"]
+
     L --> N["charts, cards, tables, downloads, AI outputs"]
     M6 --> N
+    P3 --> N
 ```
 
 ## API Data Pipeline Overview
@@ -85,8 +89,8 @@ flowchart LR
     C --> E["Gemini"]
     C --> F["OpenAI"]
 
-    D --> G["Channel Insights / Outlier Finder / Ytuber / Tools / Thumbnail URL flow"]
-    E --> H["Thumbnails / Ytuber AI Studio / Outlier AI"]
+    D --> G["Channel Insights / Outlier Finder / Ytuber / Media Lab public asset flow"]
+    E --> H["Media Lab AI thumbnails / Ytuber AI Studio / Outlier AI"]
     F --> H
 
     G --> I["service-layer normalization"]
@@ -102,10 +106,9 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | `Channel Analysis` | benchmark committed cross-channel datasets | CSVs, pandas, visualization helpers | KPI cards, trend charts, ranked tables | dataset-backed |
 | `Channel Insights` | analyze one tracked public channel over time | `public_channel_service`, `channel_snapshot_store`, `channel_insights_service`, `topic_model_runtime`, `model_artifact_service` | topic trends, format analysis, outliers, next-topic ideas, history | mixed |
-| `Thumbnails` | generate and export thumbnails without broader strategy clutter | `thumbnail_generator.py`, `thumbnail_hub_service.py`, provider keys, public thumbnail URLs | generated images, preview cards, downloads | mixed |
+| `Media Lab` | perform single-video creator media tasks without switching pages | `youtube_tools.py`, `transcript_service.py`, `thumbnail_hub_service.py`, `media_error_service.py`, `ThumbnailGenerator`, provider keys | transcript preview/download, thumbnail grid, AI-generated images, MP3/MP4 downloads | mixed |
 | `Outlier Finder` | find niche winners using explainable scoring | `outliers_finder.py`, `outlier_ai.py`, YouTube API | scored outlier tables, breakout charts, AI research | mixed |
 | `Ytuber` | run a live creator AI workspace for one channel | YouTube API loaders, scoring helpers, thumbnail generator, AI generation | audits, AI Studio, keyword and planner outputs | mixed |
-| `Tools` | inspect and export public YouTube assets | `youtube_tools.py`, `transcript_service.py`, `yt-dlp`, `ffmpeg` | metadata previews, transcript/audio/video/thumbnail downloads | API-backed |
 | `Deployment` | explain setup and deployment in the app shell | static app guidance | setup and deploy notes | static |
 
 ## Channel Analysis
@@ -135,7 +138,7 @@ flowchart LR
 
 ## Channel Insights
 
-`Channel Insights` is the deepest current analysis path in V5. It is public-only, snapshot-based, and shares one refresh pipeline regardless of topic mode.
+`Channel Insights` is the deepest current analysis path in V6. It is public-only, snapshot-based, and shares one refresh pipeline regardless of topic mode.
 
 ### Connect And Refresh Flow
 
@@ -268,56 +271,172 @@ flowchart TD
 | `Next Topics` | turn current strengths and gaps into grounded future ideas | recommendation bundle and theme cards |
 | `History` | compare snapshots over time | persisted channel snapshot store |
 
-## Thumbnails
+## Media Lab
 
-`Thumbnails` is intentionally a narrow, thumbnail-only workspace in V5. It has two tabs and no broader recommendation clutter.
+`Media Lab` is the main V6 workflow change. Historically, V5 documented separate `Thumbnails` and `Tools` pages. In current V6 those two pages are consolidated into one focused, single-video workspace.
 
-### Generate Tab
-
-This tab is AI-backed and uses `ThumbnailGenerator` plus current provider/model settings.
+### Current Media Lab flow
 
 ```mermaid
 flowchart TD
-    A["Prompt form inputs<br/>title, context, style, negative prompt"] --> B["provider + model selection"]
-    B --> C["API key from secrets or manual field"]
-    C --> D["ThumbnailGenerator.generate(...)"]
-    D --> E["Gemini or OpenAI image response"]
-    E --> F["image bytes"]
-    F --> G["write files to outputs/thumbnails"]
-    G --> H["gallery cards + download buttons"]
+    A["Video URL / ID"] --> B["fetch_video_metadata(...)"]
+    B --> C["get_available_formats(...)"]
+    B --> D["list_transcript_options(...)"]
+    B --> E["preview_thumbnail_target(...)"]
+
+    C --> F["Video Lookup summary"]
+    D --> G["Transcript"]
+    E --> H["Thumbnail Studio"]
+
+    H --> I["prepare_thumbnail_download(...)"]
+    H --> J["ThumbnailGenerator.generate(...)"]
+
+    C --> K["prepare_audio_download(...)"]
+    C --> L["prepare_video_download(...)"]
+
+    G --> M["text preview + text download"]
+    I --> N["public thumbnail download"]
+    J --> O["generated image gallery + downloads"]
+    K --> P["MP3 or original audio artifact"]
+    L --> Q["MP4 artifact"]
 ```
 
-Current generate-tab behavior:
+### Current Media Lab sections
 
-- supports `Gemini` and `OpenAI`
-- exposes model-specific size and quality settings
-- exposes `background` and `output format` when using OpenAI image models
-- estimates run cost before generation
-- writes generated files into `outputs/thumbnails`
-- renders per-image download buttons immediately
+| Section | Purpose | Main Services |
+| --- | --- | --- |
+| `Video Lookup` | validate one public video and load shared context for the rest of the page | `fetch_video_metadata(...)`, `get_available_formats(...)`, `list_transcript_options(...)`, `preview_thumbnail_target(...)` |
+| `Transcript` | preview public captions and download them as text | `fetch_transcript_text(...)`, `prepare_transcript_download(...)` |
+| `Thumbnail Studio` | either export public thumbnail variants or generate new AI thumbnails | `preview_thumbnail_target(...)`, `prepare_thumbnail_download(...)`, `ThumbnailGenerator.generate(...)` |
+| `Audio Download` | prepare a user-friendly MP3 by default, or expose the original audio container in advanced mode | `prepare_audio_download(...)`, `ffmpeg_available()` |
+| `Video Download` | prepare a downloadable MP4 using simpler quality profiles instead of broad format pickers | `prepare_video_download(...)` |
 
-### Download From URL Tab
+### Video Lookup
 
-This tab is API/public-web-backed and uses `thumbnail_hub_service.py`.
+`Video Lookup` is the page anchor. It resolves the URL once and shares that result across transcript, thumbnail, audio, and video actions.
+
+What happens on lookup:
+
+- validate the public video target
+- fetch shared metadata and available formats
+- fetch transcript options
+- discover public thumbnail variants
+- cache the result in session state so the rest of the page does not keep reloading
+
+### Transcript
+
+The transcript path is deliberately stage-based and user-readable.
 
 ```mermaid
-flowchart TD
-    A["YouTube video URL or ID"] --> B["preview_thumbnail_target(...)"]
-    B --> C["resolve video target"]
-    C --> D["fetch oEmbed metadata"]
-    D --> E["discover thumbnail variants"]
-    E --> F["show preview + variant selector"]
-    F --> G["prepare_thumbnail_download(...)"]
-    G --> H["temporary artifact path"]
-    H --> I["in-app download button"]
+flowchart LR
+    A["Transcript language choice"] --> B["fetch_transcript_text(...)"]
+    B --> C["prepare_transcript_download(...)"]
+    C --> D["Preview text area"]
+    D --> E["Download Transcript"]
 ```
 
-Current download-tab behavior:
+Current transcript behavior:
 
-- accepts watch URLs, Shorts URLs, `youtu.be` URLs, or raw video IDs
-- previews the public thumbnail variants exposed by YouTube
-- keeps the flow thumbnail-only
-- prepares a temporary artifact for download rather than mixing in transcript/audio/video tooling
+- shows a clean preview before download
+- uses a progress/status sequence instead of a silent action
+- exposes advanced transcript options inside an expander
+- returns friendly errors when captions are unavailable or disabled
+
+### Thumbnail Studio
+
+`Thumbnail Studio` has two internal modes inside the same section:
+
+- `Preview & Download`
+- `AI Generate`
+
+#### Public thumbnail mode
+
+```mermaid
+flowchart LR
+    A["preview_thumbnail_target(...)"] --> B["discover variant grid"]
+    B --> C["user selects one variant card"]
+    C --> D["prepare_thumbnail_download(...)"]
+    D --> E["temporary artifact"]
+    E --> F["Download button"]
+```
+
+#### AI thumbnail mode
+
+```mermaid
+flowchart LR
+    A["prompt + provider + model settings"] --> B["ThumbnailGenerator.generate(...)"]
+    B --> C["Gemini or OpenAI image response"]
+    C --> D["outputs/thumbnails"]
+    D --> E["gallery cards + downloads"]
+```
+
+Current thumbnail behavior:
+
+- previews multiple public resolutions in a grid
+- supports provider/model selection for AI generation
+- keeps advanced generation settings hidden behind expanders
+- stores generated outputs under `outputs/thumbnails`
+
+### Audio Download
+
+Audio preparation is designed around a recommended path first and an advanced path second.
+
+```mermaid
+flowchart LR
+    A["Audio profile"] --> B["prepare_audio_download(...)"]
+    B --> C["yt-dlp + optional ffmpeg conversion"]
+    C --> D["progress hook updates"]
+    D --> E["prepared artifact + download"]
+```
+
+Current audio behavior:
+
+- defaults to MP3
+- keeps the original-container option as an advanced path
+- shows progress through `st.progress`
+- surfaces clearer messages when `ffmpeg` is missing or the video is restricted
+
+### Video Download
+
+Video preparation uses simpler quality profiles instead of broad format pickers.
+
+```mermaid
+flowchart LR
+    A["Video quality profile"] --> B["prepare_video_download(...)"]
+    B --> C["yt-dlp download + merge flow"]
+    C --> D["progress hook updates"]
+    D --> E["MP4 artifact + download"]
+```
+
+Current video behavior:
+
+- prefers simple quality presets over raw format complexity
+- returns MP4 artifacts for in-app download
+- shares the same friendly error mapping as audio and transcript flows
+
+### Media Lab error handling
+
+`Media Lab` centralizes friendly error mapping instead of surfacing raw backend exceptions first.
+
+| Failure Mode | Current User-Facing Behavior |
+| --- | --- |
+| private or deleted video | clear unavailable message |
+| members-only / age-restricted / region-restricted video | friendly restriction-specific copy |
+| transcript unavailable | caption-specific message and no broken preview state |
+| `ffmpeg` missing | audio conversion guidance instead of a raw stack trace |
+| oversized artifact | explains that the file is too large for in-app delivery |
+
+### Historical note
+
+In historical V5 documentation:
+
+- `Thumbnails` was a separate page
+- `Tools` had `Single`, `Batch`, and `Playlist`
+
+In current V6 runtime:
+
+- those workflows are merged into `Media Lab`
+- only the single-video path remains active in the live surface
 
 ## Outlier Finder
 
@@ -424,47 +543,6 @@ flowchart LR
     J --> K
 ```
 
-## Tools
-
-`Tools` remains the broadest utility page in V5. It prepares public assets into temporary artifacts and keeps them itemized rather than creating a persistent media store.
-
-### Tools tab structure
-
-| Tab | Purpose | Main Services |
-| --- | --- | --- |
-| `Single` | inspect one public video or Short and prepare individual assets | `youtube_tools.py`, `transcript_service.py` |
-| `Batch` | run one operation across many URLs with per-item results | `prepare_batch_operation(...)` in `youtube_tools.py` |
-| `Playlist` | preview a public playlist, select items, and process them sequentially | `fetch_playlist_preview(...)`, `prepare_playlist_operation(...)` |
-
-### Tools tab flow
-
-```mermaid
-flowchart TD
-    A["Tools page"] --> B["Single"]
-    A --> C["Batch"]
-    A --> D["Playlist"]
-
-    B --> B1["validate_youtube_url(...)"]
-    B1 --> B2["fetch metadata + formats + transcript options"]
-    B2 --> B3["prepare thumbnail / transcript / audio / video artifact"]
-
-    C --> C1["split URL list"]
-    C1 --> C2["prepare_batch_operation(...)"]
-    C2 --> C3["itemized results + artifacts"]
-
-    D --> D1["fetch_playlist_preview(...)"]
-    D1 --> D2["select playlist items"]
-    D2 --> D3["prepare_playlist_operation(...)"]
-    D3 --> D4["itemized results + artifacts"]
-```
-
-### Runtime constraints that matter
-
-- downloads are prepared into temporary files
-- large artifacts may exceed Streamlit in-app delivery limits
-- some video/audio formats require `ffmpeg`
-- private, age-gated, members-only, or region-restricted videos can fail
-
 ## Deployment
 
 `Deployment` is the operational reference page inside the app shell. It does not run analysis itself; it explains how to run or deploy the app, which repo/branch is active, and which secrets need to exist.
@@ -506,6 +584,7 @@ flowchart LR
     B --> C["V3<br/>clear page architecture"]
     C --> D["V4<br/>deep intelligence + auth branch"]
     D --> E["V5<br/>public-only clarity + deep docs"]
+    E --> F["V6<br/>Media Lab + lighter live shell"]
 ```
 
 | Version | Main Architectural Shift |
@@ -515,3 +594,4 @@ flowchart LR
 | `V3` | clarified runtime shell, page ownership, and active services |
 | `V4` | added Channel Insights, Assistant, Google OAuth, owner analytics, and optional BERTopic runtime |
 | `V5` | removed Assistant and OAuth, kept the strongest workflows, and documented the current runtime in depth |
+| `V6` | merged public asset workflows into `Media Lab`, lightened the shell, and aligned the current runtime with a cleaner deploy surface |

@@ -9,15 +9,15 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 
-# Creator Insights palette (red + cyan lead, matches dashboard theme / Youtube-Optmization)
+# Creator Insights palette (YouTube red-led, tuned for the light V6 shell)
 YT_COLORWAY: List[str] = [
-    "#FF0000",
-    "#00D4FF",
-    "#00E676",
-    "#FFB300",
-    "#FF6090",
-    "#7C4DFF",
-    "#FF9100",
+    "#FF0033",
+    "#FF5A76",
+    "#D92D20",
+    "#FDB022",
+    "#7A5AF8",
+    "#12B76A",
+    "#2E90FA",
 ]
 
 PLOTLY_INTERACTIVE_CONFIG: Dict[str, Any] = {
@@ -31,28 +31,28 @@ PLOTLY_INTERACTIVE_CONFIG: Dict[str, Any] = {
 PLOTLY_DASHBOARD_TEMPLATE: Dict[str, Any] = {
     "layout": {
         "paper_bgcolor": "rgba(0,0,0,0)",
-        "plot_bgcolor": "rgba(22,33,62,0.25)",
+        "plot_bgcolor": "#FFFFFF",
         "font": {
-            "color": "#B0B0B0",
+            "color": "#475467",
             "family": "Inter, system-ui, sans-serif",
         },
         "xaxis": {
-            "gridcolor": "rgba(255,255,255,0.06)",
-            "zerolinecolor": "rgba(255,255,255,0.08)",
-            "title": {"font": {"color": "#FFFFFF"}},
-            "tickfont": {"color": "#B0B0B0"},
+            "gridcolor": "rgba(15,23,42,0.08)",
+            "zerolinecolor": "rgba(15,23,42,0.08)",
+            "title": {"font": {"color": "#101828"}},
+            "tickfont": {"color": "#475467"},
         },
         "yaxis": {
-            "gridcolor": "rgba(255,255,255,0.06)",
-            "zerolinecolor": "rgba(255,255,255,0.08)",
-            "title": {"font": {"color": "#FFFFFF"}},
-            "tickfont": {"color": "#B0B0B0"},
+            "gridcolor": "rgba(15,23,42,0.08)",
+            "zerolinecolor": "rgba(15,23,42,0.08)",
+            "title": {"font": {"color": "#101828"}},
+            "tickfont": {"color": "#475467"},
         },
         "colorway": YT_COLORWAY,
         "hoverlabel": {
-            "bgcolor": "#1A1A2E",
-            "font": {"color": "#FFFFFF"},
-            "bordercolor": "#FF0000",
+            "bgcolor": "#FFFFFF",
+            "font": {"color": "#101828"},
+            "bordercolor": "#FF0033",
         },
     }
 }
@@ -62,19 +62,19 @@ PLOTLY_LIGHT_TEMPLATE = PLOTLY_DASHBOARD_TEMPLATE
 
 
 def apply_dashboard_chart_theme(fig: go.Figure) -> go.Figure:
-    """Apply shared dark analytics template for dashboard Plotly figures."""
+    """Apply the shared light analytics template for dashboard Plotly figures."""
     fig.update_layout(**PLOTLY_DASHBOARD_TEMPLATE["layout"])
     fig.update_layout(
         title_font=dict(
             size=17,
             family="Inter, system-ui, sans-serif",
-            color="#FFFFFF",
+            color="#101828",
         ),
         legend=dict(
-            bgcolor="rgba(22,33,62,0.92)",
-            bordercolor="rgba(255,255,255,0.12)",
+            bgcolor="rgba(255,255,255,0.96)",
+            bordercolor="rgba(15,23,42,0.08)",
             borderwidth=1,
-            font=dict(color="#B0B0B0"),
+            font=dict(color="#475467"),
         ),
     )
     return fig
@@ -155,7 +155,7 @@ def section_header(title: str, subtitle: Optional[str] = None, icon: Optional[st
     st.markdown('<div class="yt-section-underline"></div>', unsafe_allow_html=True)
     if subtitle:
         st.markdown(
-            "<p style='color:#B0B0B0;font-size:13px;line-height:1.55;font-weight:500;'>" + subtitle + "</p>",
+            "<p style='color:#667085;font-size:13px;line-height:1.55;font-weight:500;'>" + subtitle + "</p>",
             unsafe_allow_html=True,
         )
 
@@ -228,8 +228,8 @@ def plotly_bar_chart(
     horizontal: bool = False,
 ) -> go.Figure:
     """Create a bar chart with red → cyan emphasis (Creator Insights charts)."""
-    bar_line = dict(color="rgba(255,255,255,0.12)", width=0.8)
-    _bar_cs = [[0, "rgba(255,0,0,0.35)"], [0.5, "#FF0000"], [1, "#00D4FF"]]
+    bar_line = dict(color="rgba(15,23,42,0.08)", width=0.8)
+    _bar_cs = [[0, "rgba(255,0,51,0.18)"], [0.5, "#FF0033"], [1, "#FF5A76"]]
     if horizontal:
         fig = go.Figure(
             go.Bar(
@@ -289,8 +289,8 @@ def plotly_heatmap(
             colorscale="Viridis",
             colorbar=dict(
                 title=z,
-                tickfont=dict(color="#B0B0B0"),
-                title_font=dict(color="#FFFFFF"),
+                tickfont=dict(color="#475467"),
+                title_font=dict(color="#101828"),
             ),
         )
     )

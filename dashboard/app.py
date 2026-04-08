@@ -10,7 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from dashboard.components.layout import render_page_hero
 from dashboard.components.sidebar import render_sidebar_footer, render_sidebar_header
 from dashboard.components.theme import inject_shared_theme
-from dashboard.views import channel_analysis, channel_insights, outlier_finder, recommendations, tools, ytuber
+from dashboard.views import channel_analysis, channel_insights, outlier_finder, tools, ytuber
 
 
 def _render_app_shell(page: str) -> None:
@@ -20,8 +20,8 @@ def _render_app_shell(page: str) -> None:
         <div class="fade-in yt-app-hero-shell" style="margin-bottom:0.25rem;">
             <div class="yt-page-title">YouTube Creator Insights</div>
             <div class="yt-page-subtitle">
-                YouTube IP V5 · Purdue University × Google — cross-channel analytics, benchmarking,
-                owned-channel intelligence, outlier research, and AI-assisted workflows for creators.
+                YouTube IP V6 · Purdue University × Google — cross-channel analytics, benchmarking,
+                public-channel intelligence, outlier research, and creator-ready media workflows.
             </div>
         </div>
         """,
@@ -48,11 +48,6 @@ def _page_channel_insights() -> None:
     channel_insights.render()
 
 
-def _page_thumbnails() -> None:
-    _render_app_shell("Thumbnails")
-    recommendations.render()
-
-
 def _page_outlier_finder() -> None:
     _render_app_shell("Outlier Finder")
     outlier_finder.render()
@@ -63,8 +58,8 @@ def _page_ytuber() -> None:
     ytuber.render()
 
 
-def _page_tools() -> None:
-    _render_app_shell("Tools")
+def _page_media_lab() -> None:
+    _render_app_shell("Media Lab")
     tools.render()
 
 
@@ -83,7 +78,7 @@ def _page_deployment() -> None:
         ```
 
         ### Streamlit Cloud Settings
-        - Repo: `royayushkr/Youtube-IP-V5`
+        - Repo: `royayushkr/Youtube-IP-V6`
         - Branch: `main`
         - Main file path: `streamlit_app.py`
 
@@ -99,11 +94,11 @@ def _page_deployment() -> None:
         ### Notes
         - `dashboard/app.py` remains the main application module.
         - `streamlit_app.py` is the root-level deployment entrypoint for Streamlit Cloud.
-        - `Channel Analysis` and `Thumbnails` use the committed assets and configured AI providers already in the repo.
+        - `Channel Analysis` and `Media Lab` use the committed assets and configured AI providers already in the repo.
         - `Channel Insights` is public-only in this build and stores dated SQLite snapshots on manual refresh.
-        - `Ytuber` and `Tools` remain available as part of the AI suite.
+        - `Ytuber` remains available as part of the AI suite.
         - `Outlier Finder` remains a standalone research workflow.
-        - `packages.txt` installs `ffmpeg` for the Tools page media flows.
+        - `packages.txt` installs `ffmpeg` for the Media Lab audio/video flows.
 
         ### Alternate Entrypoint
         ```bash
@@ -120,17 +115,16 @@ PAGE_CHANNEL_ANALYSIS = st.Page(
     default=True,
 )
 PAGE_CHANNEL_INSIGHTS = st.Page(_page_channel_insights, title="Channel Insights", icon="💡")
-PAGE_THUMBNAILS = st.Page(_page_thumbnails, title="Thumbnails", icon="🖼️")
+PAGE_MEDIA_LAB = st.Page(_page_media_lab, title="Media Lab", icon="🧰")
 PAGE_OUTLIER_FINDER = st.Page(_page_outlier_finder, title="Outlier Finder", icon="🎯")
 PAGE_YTUBER = st.Page(_page_ytuber, title="Ytuber", icon="🎬")
-PAGE_TOOLS = st.Page(_page_tools, title="Tools", icon="🛠️")
 PAGE_DEPLOYMENT = st.Page(_page_deployment, title="Deployment", icon="🚀")
 
 
 def run() -> None:
     """Execute the multipage router. Must run on every Streamlit script rerun (not only on first import)."""
     st.set_page_config(
-        page_title="YouTube Creator Insights | Purdue × Google",
+        page_title="YouTube Creator Insights V6 | Purdue × Google",
         page_icon="📺",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -146,10 +140,9 @@ def run() -> None:
         [
             PAGE_CHANNEL_ANALYSIS,
             PAGE_CHANNEL_INSIGHTS,
-            PAGE_THUMBNAILS,
+            PAGE_MEDIA_LAB,
             PAGE_OUTLIER_FINDER,
             PAGE_YTUBER,
-            PAGE_TOOLS,
             PAGE_DEPLOYMENT,
         ],
         expanded=True,

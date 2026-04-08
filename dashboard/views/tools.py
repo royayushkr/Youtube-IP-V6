@@ -1,279 +1,296 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from html import escape
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
-import pandas as pd
 import streamlit as st
 
-from dashboard.components.visualizations import section_header, styled_dataframe
+from dashboard.components.visualizations import section_header
+from src.llm_integration.thumbnail_generator import ThumbnailGenerator, get_api_key
+from src.services.media_error_service import MediaErrorInfo, map_media_error
+from src.services.thumbnail_hub_service import PreparedThumbnailArtifact, ThumbnailPreview, prepare_thumbnail_download, preview_thumbnail_target
 from src.services.transcript_service import TranscriptOption, fetch_transcript_text, list_transcript_options, prepare_transcript_download
 from src.services.youtube_tools import (
-    PLAYLIST_PREVIEW_LIMIT_DEFAULT,
     STREAMLIT_DOWNLOAD_LIMIT_BYTES,
-    BatchItemResult,
     FormatOption,
-    PlaylistPreview,
     PreparedArtifact,
     VideoMetadata,
-    fetch_playlist_preview,
-    fetch_video_metadata,
     ffmpeg_available,
+    fetch_video_metadata,
     get_available_formats,
     prepare_audio_download,
-    prepare_batch_operation,
-    prepare_playlist_operation,
-    prepare_thumbnail_download,
     prepare_video_download,
-    validate_youtube_url,
 )
+from src.utils.api_keys import get_provider_key_count
 from src.utils.file_utils import cleanup_temp_dirs
 
 
-TOOLS_STATE_KEYS = (
-    "tools_single_preview",
-    "tools_single_formats",
-    "tools_single_transcripts",
-    "tools_single_artifacts",
-    "tools_single_transcript_text",
-    "tools_single_error",
-    "tools_batch_results",
-    "tools_batch_error",
-    "tools_playlist_preview",
-    "tools_playlist_results",
-    "tools_playlist_error",
-    "tools_temp_paths",
-    "tools_error",
-    "tools_last_mode",
+MEDIA_LAB_STATE_KEYS = (
+    "media_lab_preview",
+    "media_lab_formats",
+    "media_lab_transcripts",
+    "media_lab_thumbnail_preview",
+    "media_lab_error",
+    "media_lab_transcript_text",
+    "media_lab_transcript_artifact",
+    "media_lab_audio_artifact",
+    "media_lab_video_artifact",
+    "media_lab_thumbnail_artifacts",
+    "media_lab_generated_images",
+    "media_lab_temp_paths",
 )
 
-OPERATION_OPTIONS = {
-    "Metadata Preview": "metadata",
-    "Thumbnail Download": "thumbnail",
-    "Transcript Export": "transcript",
-    "Audio Download": "audio",
-    "Video Download": "video",
+PROVIDER_LABELS = {
+    "gemini": "Gemini",
+    "openai": "OpenAI / ChatGPT",
 }
-THUMBNAIL_QUALITY_OPTIONS = ["Best Available", "High", "Medium", "Low"]
-TRANSCRIPT_LANGUAGE_OPTIONS = {
-    "Any Available": "",
-    "English (en)": "en",
-    "Spanish (es)": "es",
-    "Hindi (hi)": "hi",
-    "Portuguese (Brazil)": "pt-BR",
-    "German (de-DE)": "de-DE",
-    "French (fr)": "fr",
-    "Japanese (ja)": "ja",
+
+IMAGE_MODEL_CATALOG = {
+    "gemini": [
+        {
+            "id": "gemini-2.5-flash-image",
+            "label": "Gemini 2.5 Flash Image",
+            "summary": "Fastest option for thumbnail ideation with strong prompt adherence.",
+            "per_image": 0.039,
+            "size_options": ["1024x1024"],
+            "quality_options": ["standard"],
+        },
+    ],
+    "openai": [
+        {
+            "id": "gpt-image-1.5",
+            "label": "GPT Image 1.5",
+            "summary": "Highest-quality thumbnail rendering with flexible formats and background control.",
+            "pricing": {
+                "low": {"1024x1024": 0.009, "1024x1536": 0.013, "1536x1024": 0.013},
+                "medium": {"1024x1024": 0.034, "1024x1536": 0.050, "1536x1024": 0.050},
+                "high": {"1024x1024": 0.133, "1024x1536": 0.200, "1536x1024": 0.200},
+            },
+            "size_options": ["1024x1024", "1024x1536", "1536x1024"],
+            "quality_options": ["low", "medium", "high"],
+            "background_options": ["opaque", "transparent"],
+            "format_options": ["png", "webp", "jpeg"],
+        },
+        {
+            "id": "gpt-image-1-mini",
+            "label": "GPT Image 1 Mini",
+            "summary": "Lower-cost thumbnail iteration when you want a few fast visual angles.",
+            "pricing": {
+                "low": {"1024x1024": 0.005, "1024x1536": 0.006, "1536x1024": 0.006},
+                "medium": {"1024x1024": 0.011, "1024x1536": 0.015, "1536x1024": 0.015},
+                "high": {"1024x1024": 0.036, "1024x1536": 0.052, "1536x1024": 0.052},
+            },
+            "size_options": ["1024x1024", "1024x1536", "1536x1024"],
+            "quality_options": ["low", "medium", "high"],
+            "background_options": ["opaque", "transparent"],
+            "format_options": ["png", "webp", "jpeg"],
+        },
+    ],
 }
+
 AUDIO_PROFILE_OPTIONS = {
+    "MP3 (Recommended)": "mp3_conversion",
     "Best Audio (Original Container)": "best_audio_original",
-    "MP3 Conversion": "mp3_conversion",
 }
 VIDEO_PROFILE_OPTIONS = {
     "Best Available": "best_available",
-    "Up To 1080p": "up_to_1080p",
+    "Up To 1080p (Recommended)": "up_to_1080p",
     "Up To 720p": "up_to_720p",
     "Up To 480p": "up_to_480p",
 }
 
 
-def _inject_tools_css() -> None:
+def _inject_media_lab_css() -> None:
     st.markdown(
         """
         <style>
-        .tools-page {
+        .media-lab-page {
             max-width: var(--app-page-width);
             margin: 0 auto;
         }
-        .tools-hero {
-            max-width: 920px;
-            margin: 0 auto 1.6rem;
-            text-align: center;
+        .media-lab-hero {
+            padding: 1.4rem 1.55rem;
+            border-radius: 28px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,245,247,0.98) 100%);
+            border: 1px solid rgba(229, 57, 53, 0.10);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+            margin-bottom: 1.2rem;
         }
-        .tools-kicker {
+        .media-lab-kicker {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.45rem 0.78rem;
+            padding: 0.48rem 0.82rem;
             border-radius: 999px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #F7F8FC;
+            background: rgba(229, 57, 53, 0.08);
+            border: 1px solid rgba(229, 57, 53, 0.16);
+            color: #C62828;
             font-size: 12px;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            margin-bottom: 0.95rem;
+            margin-bottom: 0.85rem;
         }
-        .tools-kicker-dot {
-            width: 8px;
-            height: 8px;
+        .media-lab-kicker-dot {
+            width: 9px;
+            height: 9px;
             border-radius: 999px;
-            background: linear-gradient(180deg, #FF0000, #00D4FF);
-            box-shadow: 0 0 16px rgba(255, 0, 0, 0.45);
+            background: linear-gradient(180deg, #FF0033 0%, #D93025 100%);
+            box-shadow: 0 0 18px rgba(255, 0, 51, 0.24);
         }
-        .tools-title {
-            font-family: "Inter", system-ui, sans-serif;
-            font-size: clamp(36px, 3.8vw, 52px);
+        .media-lab-title {
+            font-family: var(--app-font-display);
+            font-size: clamp(34px, 4vw, 52px);
             line-height: 1.02;
-            font-weight: 700;
-            color: #F7F8FC;
+            font-weight: 800;
+            color: #101828;
             letter-spacing: -0.04em;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.7rem;
         }
-        .tools-subtitle {
-            color: #B8C1DA;
-            font-size: 16px;
-            line-height: 1.65;
+        .media-lab-subtitle {
+            color: #475467;
+            font-size: 15px;
+            line-height: 1.7;
             max-width: 760px;
-            margin: 0 auto;
         }
-        .tools-pill-row {
+        .media-lab-pill-row {
             display: flex;
-            justify-content: center;
             flex-wrap: wrap;
             gap: 0.55rem;
             margin-top: 1rem;
         }
-        .tools-pill {
+        .media-lab-pill {
             padding: 0.42rem 0.78rem;
             border-radius: 999px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            color: #D7DDF0;
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            color: #344054;
             font-size: 12px;
+            font-weight: 600;
         }
-        .tools-card {
+        .media-lab-bento {
             border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background:
-                radial-gradient(circle at top left, rgba(255, 0, 0, 0.12) 0%, transparent 32%),
-                radial-gradient(circle at top right, rgba(0, 212, 255, 0.08) 0%, transparent 28%),
-                linear-gradient(180deg, rgba(22, 33, 62, 0.95) 0%, rgba(15, 15, 35, 0.98) 100%);
-            box-shadow: 0 20px 46px rgba(3, 6, 20, 0.40);
-            padding: 1.2rem 1.25rem;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+            padding: 1.1rem 1.15rem;
             margin-bottom: 1rem;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
         }
-        .tools-card-title {
-            font-family: "Inter", system-ui, sans-serif;
-            color: #F7F8FC;
-            font-size: 20px;
+        .media-lab-bento:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
+            border-color: rgba(229, 57, 53, 0.18);
+        }
+        .media-lab-card-title {
+            font-family: var(--app-font-display);
+            color: #101828;
+            font-size: 18px;
             font-weight: 700;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.25rem;
         }
-        .tools-card-copy {
-            color: #B8C1DA;
-            font-size: 13px;
-            line-height: 1.55;
-        }
-        .tools-summary-grid {
-            display: grid;
-            gap: 0.7rem;
-            margin-top: 0.95rem;
-        }
-        .tools-summary-item {
-            padding: 0.75rem 0.85rem;
-            border-radius: 18px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-        .tools-summary-label {
-            color: #8993B2;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.22rem;
-        }
-        .tools-summary-value {
-            color: #F7F8FC;
-            font-size: 14px;
-            font-weight: 700;
-        }
-        .tools-meta-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 0.7rem;
-            margin-top: 0.9rem;
-        }
-        .tools-meta-item {
-            padding: 0.75rem 0.85rem;
-            border-radius: 16px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.06);
-        }
-        .tools-meta-label {
-            color: #8993B2;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 0.22rem;
-        }
-        .tools-meta-value {
-            color: #F7F8FC;
-            font-size: 14px;
-            line-height: 1.45;
-            font-weight: 700;
-        }
-        .tools-status-ready,
-        .tools-status-error,
-        .tools-status-warning {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.24rem 0.6rem;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .tools-status-ready {
-            color: #D1FAE5;
-            background: rgba(52, 211, 153, 0.12);
-        }
-        .tools-status-warning {
-            color: #FDE68A;
-            background: rgba(251, 191, 36, 0.12);
-        }
-        .tools-status-error {
-            color: #FCA5A5;
-            background: rgba(239, 68, 68, 0.16);
-        }
-        .tools-note {
-            color: #97A2C3;
-            font-size: 12px;
-            line-height: 1.55;
-        }
-        .tools-result-card {
-            padding: 0.9rem 1rem;
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.07);
-            background: rgba(255,255,255,0.03);
-            margin-bottom: 0.85rem;
-        }
-        .tools-empty {
-            padding: 1rem 1.1rem;
-            border-radius: 20px;
-            border: 1px dashed rgba(255,255,255,0.12);
-            background: rgba(255,255,255,0.02);
-            color: #B8C1DA;
+        .media-lab-card-copy {
+            color: #667085;
             font-size: 13px;
             line-height: 1.6;
         }
-        .tools-download-note {
-            margin-top: 0.65rem;
-            color: #97A2C3;
-            font-size: 12px;
-            line-height: 1.5;
+        .media-lab-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.8rem;
         }
-        .tools-divider {
-            height: 1px;
-            background: rgba(255,255,255,0.08);
-            margin: 1rem 0;
+        .media-lab-stat {
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF7F8 100%);
+            padding: 0.9rem 0.95rem;
+        }
+        .media-lab-stat-label {
+            color: #667085;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 0.22rem;
+        }
+        .media-lab-stat-value {
+            color: #101828;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+        .media-lab-empty {
+            padding: 1rem 1.1rem;
+            border-radius: 20px;
+            border: 1px dashed rgba(15, 23, 42, 0.14);
+            background: rgba(255, 255, 255, 0.85);
+            color: #667085;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+        .media-lab-artifact {
+            padding: 0.85rem 0.95rem;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF9FA 100%);
+            margin-top: 0.8rem;
+        }
+        .media-lab-artifact-label {
+            color: #101828;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 0.15rem;
+        }
+        .media-lab-artifact-copy {
+            color: #667085;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+        .media-lab-thumb-card {
+            padding: 0.85rem;
+            border-radius: 20px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+            margin-bottom: 0.8rem;
+        }
+        .media-lab-thumb-label {
+            color: #101828;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 0.45rem;
+        }
+        .media-lab-note {
+            color: #667085;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+        .media-lab-lookup-shell [data-testid="stForm"] {
+            background: transparent;
+            border: none;
+            padding: 0;
+            box-shadow: none;
+        }
+        .media-lab-error {
+            border-radius: 20px;
+            border: 1px solid rgba(217, 45, 32, 0.15);
+            background: #FEF3F2;
+            padding: 0.95rem 1rem;
+            margin-bottom: 1rem;
+        }
+        .media-lab-error-title {
+            color: #B42318;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+        }
+        .media-lab-error-copy {
+            color: #912018;
+            font-size: 13px;
+            line-height: 1.55;
         }
         @media (max-width: 900px) {
-            .tools-meta-grid {
+            .media-lab-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -283,119 +300,106 @@ def _inject_tools_css() -> None:
     )
 
 
-def _clear_tools_state(*, keep_single_inputs: bool = True) -> None:
-    cleanup_temp_dirs(st.session_state.get("tools_temp_paths", []))
-    for key in TOOLS_STATE_KEYS:
-        if keep_single_inputs and key in {"tools_single_preview", "tools_single_formats", "tools_single_transcripts", "tools_single_artifacts", "tools_single_transcript_text", "tools_single_error"}:
-            st.session_state.pop(key, None)
-            continue
-        st.session_state.pop(key, None)
-    st.session_state["tools_temp_paths"] = []
+def _catalog_map(provider: str) -> dict[str, dict[str, Any]]:
+    return {item["id"]: item for item in IMAGE_MODEL_CATALOG[provider]}
 
 
-def _clear_mode_state(prefix: str) -> None:
-    for key in list(st.session_state.keys()):
-        if key.startswith(prefix):
-            st.session_state.pop(key, None)
+def _format_model_option(provider: str, model_id: str) -> str:
+    item = _catalog_map(provider)[model_id]
+    return f"{item['label']}  •  {item['summary']}"
 
 
-def _register_artifacts(artifacts: Iterable[PreparedArtifact]) -> None:
-    paths = set(st.session_state.get("tools_temp_paths", []))
+def _estimate_image_cost(provider: str, model_id: str, count: int, size: str, quality: str) -> float:
+    item = _catalog_map(provider)[model_id]
+    if provider == "gemini":
+        return float(item["per_image"]) * count
+    return float(item["pricing"][quality][size]) * count
+
+
+def _register_temp_paths(*artifacts: PreparedArtifact | PreparedThumbnailArtifact | None) -> None:
+    temp_paths = set(st.session_state.get("media_lab_temp_paths", []))
     for artifact in artifacts:
-        paths.add(str(Path(artifact.file_path).parent))
-    st.session_state["tools_temp_paths"] = sorted(paths)
+        if artifact is None:
+            continue
+        temp_paths.add(str(Path(artifact.file_path).parent))
+    st.session_state["media_lab_temp_paths"] = sorted(temp_paths)
 
 
-def _render_hero() -> None:
+def _clear_media_lab_outputs() -> None:
+    cleanup_temp_dirs(st.session_state.get("media_lab_temp_paths", []))
+    for key in MEDIA_LAB_STATE_KEYS:
+        st.session_state.pop(key, None)
+    st.session_state["media_lab_temp_paths"] = []
+
+
+def _clear_download_outputs_only() -> None:
+    cleanup_temp_dirs(st.session_state.get("media_lab_temp_paths", []))
+    for key in (
+        "media_lab_transcript_text",
+        "media_lab_transcript_artifact",
+        "media_lab_audio_artifact",
+        "media_lab_video_artifact",
+        "media_lab_thumbnail_artifacts",
+    ):
+        st.session_state.pop(key, None)
+    st.session_state["media_lab_temp_paths"] = []
+
+
+def _artifact_too_large(size_bytes: int) -> bool:
+    return size_bytes > STREAMLIT_DOWNLOAD_LIMIT_BYTES
+
+
+def _render_error(info: MediaErrorInfo) -> None:
     st.markdown(
         (
-            '<div class="tools-page">'
-            '<div class="tools-hero">'
-            '<div class="tools-kicker"><span class="tools-kicker-dot"></span>Utilities</div>'
-            '<div class="tools-subtitle">Metadata, thumbnails, transcripts, and downloads — outputs are temporary; see each tool for ffmpeg or key requirements.</div>'
-            '<div class="tools-pill-row">'
-            '<span class="tools-pill">Single Videos</span>'
-            '<span class="tools-pill">Batch Operations</span>'
-            '<span class="tools-pill">Playlist Workflows</span>'
-            '<span class="tools-pill">Temporary Files Only</span>'
-            '</div>'
-            '</div>'
+            '<div class="media-lab-error">'
+            f'<div class="media-lab-error-title">{escape(info.title)}</div>'
+            f'<div class="media-lab-error-copy">{escape(info.message)}</div>'
             '</div>'
         ),
         unsafe_allow_html=True,
     )
+    with st.expander("Technical details", expanded=False):
+        st.code(info.technical_detail)
 
 
-def _summary_card(title: str, copy: str, items: list[tuple[str, str]]) -> None:
-    blocks = "".join(
-        (
-            '<div class="tools-summary-item">'
-            f'<div class="tools-summary-label">{escape(label)}</div>'
-            f'<div class="tools-summary-value">{escape(value)}</div>'
-            "</div>"
+def _progress_widgets(key: str) -> tuple[Any, Any]:
+    status_slot = st.empty()
+    progress_slot = st.empty()
+    progress = progress_slot.progress(0)
+    status_slot.caption("Waiting to start.")
+    return status_slot, progress
+
+
+def _set_progress(status_slot: Any, progress: Any, *, percent: float, message: str) -> None:
+    progress.progress(int(max(0.0, min(1.0, percent)) * 100))
+    status_slot.caption(message)
+
+
+def _progress_callback_factory(status_slot: Any, progress: Any):
+    def _callback(update: dict[str, Any]) -> None:
+        _set_progress(
+            status_slot,
+            progress,
+            percent=float(update.get("percent", 0.0)),
+            message=str(update.get("detail", "Working...")),
         )
-        for label, value in items
-    )
-    st.markdown(
-        (
-            '<div class="tools-card">'
-            f'<div class="tools-card-title">{escape(title)}</div>'
-            f'<div class="tools-card-copy">{escape(copy)}</div>'
-            f'<div class="tools-summary-grid">{blocks}</div>'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
+
+    return _callback
 
 
-def _render_metadata_card(metadata: VideoMetadata, transcript_options: list[TranscriptOption]) -> None:
-    rows = [
-        ("Title", metadata.title),
-        ("Channel", metadata.channel),
-        ("Duration", metadata.duration_label),
-        ("Published", metadata.publish_date or "Unknown"),
-        ("Video ID", metadata.video_id),
-        ("Content Type", metadata.content_type),
-        ("Transcript", f"{len(transcript_options)} language options" if transcript_options else "Not available"),
-        ("Canonical URL", metadata.webpage_url),
-    ]
-    blocks = "".join(
-        (
-            '<div class="tools-meta-item">'
-            f'<div class="tools-meta-label">{escape(label)}</div>'
-            f'<div class="tools-meta-value">{escape(value)}</div>'
-            '</div>'
-        )
-        for label, value in rows
-    )
-    st.markdown(
-        (
-            '<div class="tools-card">'
-            '<div class="tools-card-title">Metadata Preview</div>'
-            '<div class="tools-card-copy">This preview is cached for one hour to keep repeat lookups fast and quota-friendly.</div>'
-            f'<div class="tools-meta-grid">{blocks}</div>'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
-
-
-def _artifact_too_large(artifact: PreparedArtifact) -> bool:
-    return artifact.size_bytes > STREAMLIT_DOWNLOAD_LIMIT_BYTES
-
-
-def _render_download_button(artifact: PreparedArtifact, *, label: str, key: str) -> None:
-    if _artifact_too_large(artifact):
-        size_mb = artifact.size_bytes / (1024 * 1024)
-        limit_mb = STREAMLIT_DOWNLOAD_LIMIT_BYTES / (1024 * 1024)
-        st.warning(
-            f"This file is {size_mb:.1f} MB. In-app downloads are limited to about {limit_mb:.0f} MB to keep the Streamlit session stable."
-        )
-        return
+def _render_download_button(artifact: PreparedArtifact | PreparedThumbnailArtifact, *, label: str, key: str) -> None:
     file_path = Path(artifact.file_path)
     if not file_path.exists():
-        st.error("This temporary file is no longer available. Prepare it again.")
+        st.warning("This temporary file is no longer available. Prepare it again.")
         return
+
+    if _artifact_too_large(int(artifact.size_bytes)):
+        limit_mb = STREAMLIT_DOWNLOAD_LIMIT_BYTES / (1024 * 1024)
+        size_mb = artifact.size_bytes / (1024 * 1024)
+        st.warning(f"This file is {size_mb:.1f} MB. In-app downloads are limited to about {limit_mb:.0f} MB.")
+        return
+
     st.download_button(
         label,
         data=file_path.read_bytes(),
@@ -407,533 +411,553 @@ def _render_download_button(artifact: PreparedArtifact, *, label: str, key: str)
     st.caption(f"{artifact.file_name} • {(artifact.size_bytes / (1024 * 1024)):.2f} MB")
 
 
-def _render_artifact_card(title: str, artifact: PreparedArtifact, *, button_label: str, key_prefix: str) -> None:
+def _render_artifact_panel(title: str, copy: str, artifact: PreparedArtifact | PreparedThumbnailArtifact, *, button_label: str, key: str) -> None:
     st.markdown(
         (
-            '<div class="tools-result-card">'
-            f'<div class="tools-card-title" style="font-size:16px;margin-bottom:0.2rem;">{escape(title)}</div>'
-            f'<div class="tools-note">{escape(artifact.file_name)}</div>'
+            '<div class="media-lab-artifact">'
+            f'<div class="media-lab-artifact-label">{escape(title)}</div>'
+            f'<div class="media-lab-artifact-copy">{escape(copy)}</div>'
             '</div>'
         ),
         unsafe_allow_html=True,
     )
-    _render_download_button(artifact, label=button_label, key=f"{key_prefix}_download")
+    _render_download_button(artifact, label=button_label, key=key)
 
 
-def _split_url_lines(raw_text: str) -> list[str]:
-    urls: list[str] = []
-    seen: set[str] = set()
-    for line in raw_text.splitlines():
-        value = line.strip()
-        if not value or value in seen:
-            continue
-        seen.add(value)
-        urls.append(value)
-    return urls
+def _render_hero() -> None:
+    st.markdown(
+        """
+        <div class="media-lab-page">
+            <div class="media-lab-hero">
+                <div class="media-lab-kicker"><span class="media-lab-kicker-dot"></span>Media Lab</div>
+                <div class="media-lab-title">One clean workspace for transcripts, thumbnails, video, and audio.</div>
+                <div class="media-lab-subtitle">
+                    Start from one public YouTube video or Short, then extract captions, preview multi-resolution thumbnails,
+                    generate new thumbnail concepts, and prepare MP4 or MP3 downloads with clear progress and friendlier errors.
+                </div>
+                <div class="media-lab-pill-row">
+                    <span class="media-lab-pill">Single public video workflow</span>
+                    <span class="media-lab-pill">Transcript + thumbnail + media downloads</span>
+                    <span class="media-lab-pill">Temporary artifacts only</span>
+                    <span class="media-lab-pill">Streamlit + yt-dlp ready</span>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
-def _render_operation_help(operation: str) -> None:
-    notes = {
-        "metadata": "Metadata mode validates each URL and returns title, channel, duration, and status without preparing files.",
-        "thumbnail": "Thumbnail mode prepares the selected thumbnail quality for each item and exposes one download button per result.",
-        "transcript": "Transcript mode retrieves public manual or auto-generated captions when available and exports them as text files.",
-        "audio": "Audio mode prepares one downloadable audio artifact per item. MP3 conversion requires FFmpeg.",
-        "video": "Video mode uses format profiles rather than exact format IDs in Batch and Playlist mode so results stay predictable across different videos.",
-    }
-    st.markdown(f'<div class="tools-note">{escape(notes[operation])}</div>', unsafe_allow_html=True)
-
-
-def _batch_options_ui(prefix: str, operation: str) -> dict[str, Any]:
-    options: dict[str, Any] = {}
-    if operation == "thumbnail":
-        options["thumbnail_quality"] = st.selectbox(
-            "Thumbnail Quality",
-            THUMBNAIL_QUALITY_OPTIONS,
-            index=0,
-            key=f"{prefix}_thumbnail_quality",
+def _render_summary_cards(preview: VideoMetadata | None, formats: dict[str, list[FormatOption]] | None, transcripts: list[TranscriptOption] | None) -> None:
+    items = [
+        ("Current target", preview.content_type if preview else "No video loaded"),
+        ("Transcript options", str(len(transcripts or [])) if preview else "0"),
+        (
+            "Formats discovered",
+            f"{len((formats or {}).get('video', []))} video / {len((formats or {}).get('audio', []))} audio" if preview else "Load a video first",
+        ),
+        ("FFmpeg", "Available" if ffmpeg_available() else "Not installed"),
+    ]
+    blocks = "".join(
+        (
+            '<div class="media-lab-stat">'
+            f'<div class="media-lab-stat-label">{escape(label)}</div>'
+            f'<div class="media-lab-stat-value">{escape(value)}</div>'
+            '</div>'
         )
-    elif operation == "transcript":
-        display = st.selectbox(
-            "Preferred Transcript Language",
-            list(TRANSCRIPT_LANGUAGE_OPTIONS.keys()),
-            index=0,
-            key=f"{prefix}_transcript_language",
-        )
-        options["language_code"] = TRANSCRIPT_LANGUAGE_OPTIONS[display] or None
-        options["prefer_any"] = st.toggle(
-            "Fallback To Any Available Transcript",
-            value=True,
-            key=f"{prefix}_transcript_fallback",
-        )
-    elif operation == "audio":
-        audio_labels = list(AUDIO_PROFILE_OPTIONS.keys())
-        if not ffmpeg_available():
-            audio_labels = [label for label in audio_labels if "MP3" not in label]
-        audio_display = st.selectbox(
-            "Audio Profile",
-            audio_labels,
-            index=0,
-            key=f"{prefix}_audio_profile",
-        )
-        options["audio_profile"] = AUDIO_PROFILE_OPTIONS[audio_display]
-    elif operation == "video":
-        video_display = st.selectbox(
-            "Video Quality Profile",
-            list(VIDEO_PROFILE_OPTIONS.keys()),
-            index=0,
-            key=f"{prefix}_video_profile",
-        )
-        options["video_profile"] = VIDEO_PROFILE_OPTIONS[video_display]
-    return options
+        for label, value in items
+    )
+    st.markdown(
+        (
+            '<div class="media-lab-bento">'
+            '<div class="media-lab-card-title">Current Run Summary</div>'
+            '<div class="media-lab-card-copy">The merged media workflow stays intentionally narrow: one public video at a time, clean downloads, and no hidden batch side effects.</div>'
+            f'<div class="media-lab-grid" style="margin-top:0.9rem;">{blocks}</div>'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
 
 
-def _render_results_table(results: list[BatchItemResult], *, title: str) -> None:
-    if not results:
+def _lookup_video() -> None:
+    with st.container(border=True):
+        st.markdown("### Video Lookup")
+        st.caption("Paste one public YouTube watch URL, Short URL, youtu.be URL, or direct video ID.")
+        with st.form("media_lab_lookup_form", clear_on_submit=False):
+            lookup_value = st.text_input(
+                "YouTube URL Or Video ID",
+                key="media_lab_lookup_value",
+                placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/...",
+            )
+            lookup_clicked = st.form_submit_button("Load Video", type="primary", use_container_width=True)
+
+        if lookup_clicked:
+            _clear_media_lab_outputs()
+            try:
+                with st.spinner("Fetching metadata, transcript options, formats, and public thumbnails..."):
+                    preview = fetch_video_metadata(lookup_value)
+                    formats = get_available_formats(lookup_value)
+                    transcripts = list_transcript_options(preview.video_id)
+                    try:
+                        thumb_preview = preview_thumbnail_target(lookup_value)
+                    except Exception:
+                        thumb_preview = None
+                st.session_state["media_lab_preview"] = preview
+                st.session_state["media_lab_formats"] = formats
+                st.session_state["media_lab_transcripts"] = transcripts
+                st.session_state["media_lab_thumbnail_preview"] = thumb_preview
+                st.session_state["media_lab_thumbnail_artifacts"] = {}
+                st.session_state["media_lab_generated_images"] = []
+                st.session_state.pop("media_lab_error", None)
+            except Exception as exc:
+                st.session_state["media_lab_error"] = exc
+                for key in ("media_lab_preview", "media_lab_formats", "media_lab_transcripts", "media_lab_thumbnail_preview"):
+                    st.session_state.pop(key, None)
+
+
+def _render_metadata(preview: VideoMetadata, thumbnail_preview: ThumbnailPreview | None) -> None:
+    left, right = st.columns([1.05, 0.95], gap="large")
+    with left:
+        rows = [
+            ("Title", preview.title),
+            ("Channel", preview.channel),
+            ("Duration", preview.duration_label),
+            ("Published", preview.publish_date or "Unknown"),
+            ("Type", preview.content_type),
+            ("Video ID", preview.video_id),
+        ]
+        blocks = "".join(
+            (
+                '<div class="media-lab-stat">'
+                f'<div class="media-lab-stat-label">{escape(label)}</div>'
+                f'<div class="media-lab-stat-value">{escape(value)}</div>'
+                '</div>'
+            )
+            for label, value in rows
+        )
+        st.markdown(
+            (
+                '<div class="media-lab-bento">'
+                '<div class="media-lab-card-title">Video Lookup</div>'
+                '<div class="media-lab-card-copy">This preview anchors every transcript, thumbnail, audio, and video action in the page.</div>'
+                f'<div class="media-lab-grid" style="margin-top:0.9rem;">{blocks}</div>'
+                '</div>'
+            ),
+            unsafe_allow_html=True,
+        )
+    with right:
+        st.markdown(
+            (
+                '<div class="media-lab-bento">'
+                '<div class="media-lab-card-title">Thumbnail Preview</div>'
+                '<div class="media-lab-card-copy">Public thumbnail variants are discovered separately so the thumbnail section can stay multi-resolution and grid-based.</div>'
+                '</div>'
+            ),
+            unsafe_allow_html=True,
+        )
+        if thumbnail_preview and thumbnail_preview.thumbnail_variants:
+            default_variant = thumbnail_preview.default_variant
+            st.image(thumbnail_preview.thumbnail_variants[default_variant], use_container_width=True)
+            st.caption(f"{default_variant} preview")
+        elif preview.thumbnail_url:
+            st.image(preview.thumbnail_url, use_container_width=True)
+        else:
+            st.info("No public thumbnail preview is available for this video.")
+
+
+def _render_transcript_panel(preview: VideoMetadata, transcripts: list[TranscriptOption]) -> None:
+    with st.container(border=True):
+        section_header("Transcript", subtitle="Fetch a public transcript, preview it, and download it as a text file.")
+        if not transcripts:
+            st.info("No public transcript is available for this video.")
+            return
+
+        labels = [
+            f"{option.language_label} ({option.language_code}){' • Auto' if option.is_generated else ' • Manual'}"
+            for option in transcripts
+        ]
+        selected_label = st.selectbox("Transcript Language", labels, index=0, key="media_lab_transcript_language")
+        selected_option = transcripts[labels.index(selected_label)]
+        with st.expander("Advanced transcript options", expanded=False):
+            prefer_any = st.toggle("Fallback to any available transcript", value=True, key="media_lab_transcript_fallback")
+
+        if st.button("Extract Transcript", type="primary", use_container_width=True, key="media_lab_extract_transcript"):
+            status_slot, progress = _progress_widgets("media_lab_transcript_progress")
+            try:
+                _set_progress(status_slot, progress, percent=0.10, message="Validating transcript availability...")
+                transcript_text = fetch_transcript_text(
+                    preview.video_id,
+                    selected_option.language_code,
+                    prefer_any=prefer_any,
+                )
+                _set_progress(status_slot, progress, percent=0.72, message="Preparing transcript download...")
+                artifact = prepare_transcript_download(
+                    preview.video_id,
+                    selected_option.language_code,
+                    prefer_any=prefer_any,
+                    video_title=preview.title,
+                    transcript_text=transcript_text,
+                )
+                _register_temp_paths(artifact)
+                st.session_state["media_lab_transcript_text"] = transcript_text
+                st.session_state["media_lab_transcript_artifact"] = artifact
+                _set_progress(status_slot, progress, percent=1.0, message="Transcript ready.")
+            except Exception as exc:
+                _set_progress(status_slot, progress, percent=1.0, message="Transcript extraction failed.")
+                _render_error(map_media_error(exc.__cause__ or exc))
+                return
+
+        transcript_text = st.session_state.get("media_lab_transcript_text", "")
+        artifact: PreparedArtifact | None = st.session_state.get("media_lab_transcript_artifact")
+        if transcript_text:
+            st.text_area("Transcript Preview", value=transcript_text, height=240, key="media_lab_transcript_preview")
+        if artifact:
+            _render_artifact_panel(
+                "Prepared Transcript",
+                "Your transcript export is ready. Files stay temporary and are cleared when the page state resets.",
+                artifact,
+                button_label="Download Transcript",
+                key="media_lab_transcript_download",
+            )
+
+
+def _render_thumbnail_download_panel(thumbnail_preview: ThumbnailPreview | None) -> None:
+    if not thumbnail_preview:
+        st.markdown(
+            '<div class="media-lab-empty">Load a public video first to preview the available thumbnail variants and export one of them.</div>',
+            unsafe_allow_html=True,
+        )
         return
-    rows = []
-    for result in results:
-        rows.append(
-            {
-                "Title": result.metadata.title if result.metadata else "Unavailable",
-                "Channel": result.metadata.channel if result.metadata else "—",
-                "Status": result.status.title(),
-                "Message": result.message,
-                "Artifacts": len(result.artifacts),
-            }
+
+    section_header("Thumbnail Studio", subtitle="Preview the public thumbnail variants or generate new concepts with Gemini or OpenAI.")
+    public_tab, generate_tab = st.tabs(["Preview & Download", "AI Generate"])
+
+    with public_tab:
+        st.markdown(
+            '<div class="media-lab-card-copy" style="margin-bottom:0.8rem;">Each card represents a public thumbnail resolution exposed by YouTube for this specific video.</div>',
+            unsafe_allow_html=True,
         )
-    styled_dataframe(pd.DataFrame(rows), title=title, precision=0)
+        variants = list(thumbnail_preview.thumbnail_variants.items())
+        cols = st.columns(2 if len(variants) > 1 else 1, gap="large")
+        stored_artifacts: dict[str, PreparedThumbnailArtifact] = st.session_state.get("media_lab_thumbnail_artifacts", {})
+        for index, (label, url) in enumerate(variants):
+            with cols[index % len(cols)]:
+                st.markdown(f'<div class="media-lab-thumb-card"><div class="media-lab-thumb-label">{escape(label)}</div>', unsafe_allow_html=True)
+                st.image(url, use_container_width=True)
+                if st.button(
+                    f"Prepare {label}",
+                    type="primary",
+                    use_container_width=True,
+                    key=f"media_lab_prepare_thumbnail_{label}",
+                ):
+                    status_slot, progress = _progress_widgets(f"media_lab_thumb_progress_{label}")
+                    try:
+                        _set_progress(status_slot, progress, percent=0.10, message="Validating public thumbnail variant...")
+                        _set_progress(status_slot, progress, percent=0.45, message="Downloading the thumbnail file...")
+                        artifact = prepare_thumbnail_download(thumbnail_preview.canonical_url, label)
+                        _register_temp_paths(artifact)
+                        stored_artifacts[label] = artifact
+                        st.session_state["media_lab_thumbnail_artifacts"] = stored_artifacts
+                        _set_progress(status_slot, progress, percent=1.0, message="Thumbnail ready.")
+                    except Exception as exc:
+                        _set_progress(status_slot, progress, percent=1.0, message="Thumbnail preparation failed.")
+                        _render_error(map_media_error(exc.__cause__ or exc))
+                        st.markdown("</div>", unsafe_allow_html=True)
+                        continue
 
+                if label in stored_artifacts:
+                    _render_artifact_panel(
+                        f"{label} Thumbnail",
+                        "Prepared for in-app download. Choose another card if you want a different public resolution.",
+                        stored_artifacts[label],
+                        button_label=f"Download {label}",
+                        key=f"media_lab_download_thumbnail_{label}",
+                    )
+                st.markdown("</div>", unsafe_allow_html=True)
 
-def _render_batch_result_cards(results: list[BatchItemResult], *, key_prefix: str) -> None:
-    for index, result in enumerate(results):
-        status_class = f"tools-status-{result.status}"
-        with st.expander(
-            f"{result.metadata.title if result.metadata else result.source_url} • {result.status.title()}",
-            expanded=index == 0 and result.status == "ready",
-        ):
+    with generate_tab:
+        provider = st.selectbox(
+            "Provider",
+            ["gemini", "openai"],
+            index=0,
+            format_func=lambda value: PROVIDER_LABELS.get(value, value.title()),
+            key="media_lab_generate_provider",
+        )
+        model_options = [item["id"] for item in IMAGE_MODEL_CATALOG[provider]]
+        model = st.selectbox(
+            "Model",
+            model_options,
+            format_func=lambda value: _format_model_option(provider, value),
+            key="media_lab_generate_model",
+        )
+        model_meta = _catalog_map(provider)[model]
+
+        default_api_key = get_api_key(provider) or ""
+        api_key = st.text_input(
+            "Provider API Key",
+            value=default_api_key,
+            type="password",
+            key="media_lab_generate_api_key",
+            help="Leave this unchanged if the provider key is already configured in Streamlit secrets.",
+        )
+        title = st.text_input("Thumbnail Title", value=st.session_state.get("media_lab_preview").title if st.session_state.get("media_lab_preview") else "The Physics of Black Holes in 10 Minutes")
+        context = st.text_area(
+            "Creative Context",
+            value="Audience: curious learners. Goal: make the core idea instantly legible and emotionally clickable.",
+            height=110,
+            key="media_lab_generate_context",
+        )
+        style = st.text_area(
+            "Style Direction",
+            value="Bold contrast, one clear subject, cinematic lighting, 16:9 composition, minimal clutter.",
+            height=90,
+            key="media_lab_generate_style",
+        )
+        negative_prompt = st.text_input(
+            "Avoid",
+            value="tiny text, low contrast, too many subjects, busy background",
+            key="media_lab_generate_negative",
+        )
+
+        config_cols = st.columns(4)
+        with config_cols[0]:
+            count = st.slider("Concepts", min_value=1, max_value=6, value=3, key="media_lab_generate_count")
+        with config_cols[1]:
+            size = st.selectbox("Image Size", model_meta["size_options"], key="media_lab_generate_size")
+        with config_cols[2]:
+            quality = st.selectbox("Quality", model_meta["quality_options"], key="media_lab_generate_quality")
+        with config_cols[3]:
             st.markdown(
-                (
-                    f'<span class="{status_class}">{escape(result.status)}</span>'
-                    f'<div class="tools-divider"></div>'
-                ),
+                f"""
+                <div class="media-lab-stat">
+                    <div class="media-lab-stat-label">Configured Keys</div>
+                    <div class="media-lab-stat-value">{get_provider_key_count(provider)}</div>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-            if result.metadata:
-                _render_metadata_card(result.metadata, [])
-            st.markdown(f'<div class="tools-note">{escape(result.message)}</div>', unsafe_allow_html=True)
-            for artifact_index, artifact in enumerate(result.artifacts):
-                _render_artifact_card(
-                    artifact.artifact_type.title(),
-                    artifact,
-                    button_label=f"Download {artifact.artifact_type.title()}",
-                    key_prefix=f"{key_prefix}_{index}_{artifact_index}",
-                )
 
-
-def _single_summary_items() -> list[tuple[str, str]]:
-    preview: VideoMetadata | None = st.session_state.get("tools_single_preview")
-    formats = st.session_state.get("tools_single_formats") or {}
-    transcripts = st.session_state.get("tools_single_transcripts") or []
-    return [
-        ("Current Target", preview.content_type if preview else "No Video Loaded"),
-        ("FFmpeg", "Available" if ffmpeg_available() else "Not Installed"),
-        ("Transcript", "Available" if transcripts else "Unavailable"),
-        (
-            "Formats",
-            f"{len(formats.get('video', []))} video / {len(formats.get('audio', []))} audio" if preview else "Load metadata first",
-        ),
-    ]
-
-
-def _render_single_tab() -> None:
-    left, right = st.columns([1.35, 0.95], gap="large")
-    with left:
-        with st.container(border=True):
-            st.markdown("### Single Video")
-            st.caption("Paste one public YouTube video or Short URL to preview metadata and prepare individual assets.")
-            with st.form("tools_single_lookup_form", clear_on_submit=False):
-                url = st.text_input(
-                    "YouTube URL",
-                    key="tools_single_url",
-                    placeholder="https://www.youtube.com/watch?v=...",
-                )
-                submitted = st.form_submit_button("Fetch Metadata", type="primary", use_container_width=True)
-            if submitted:
-                try:
-                    target = validate_youtube_url(url)
-                    if target.target_type == "playlist":
-                        raise ValueError("Use the Playlist tab for playlist URLs.")
-                    cleanup_temp_dirs(st.session_state.get("tools_temp_paths", []))
-                    st.session_state["tools_temp_paths"] = []
-                    with st.spinner("Loading metadata, formats, and transcript options..."):
-                        preview = fetch_video_metadata(target.canonical_url)
-                        formats = get_available_formats(target.canonical_url)
-                        transcripts = list_transcript_options(preview.video_id)
-                    st.session_state["tools_single_preview"] = preview
-                    st.session_state["tools_single_formats"] = formats
-                    st.session_state["tools_single_transcripts"] = transcripts
-                    st.session_state["tools_single_artifacts"] = {}
-                    st.session_state["tools_single_transcript_text"] = ""
-                    st.session_state.pop("tools_single_error", None)
-                except Exception as exc:
-                    st.session_state["tools_single_error"] = str(exc)
-                    st.session_state.pop("tools_single_preview", None)
-                    st.session_state.pop("tools_single_formats", None)
-                    st.session_state.pop("tools_single_transcripts", None)
-        if st.session_state.get("tools_single_error"):
-            st.error(st.session_state["tools_single_error"])
-
-    with right:
-        _summary_card(
-            "Current Run Summary",
-            "Preview one public video or Short at a time. Downloads remain temporary and are cleaned when the page state resets.",
-            _single_summary_items(),
-        )
-
-    preview: VideoMetadata | None = st.session_state.get("tools_single_preview")
-    if not preview:
-        st.markdown(
-            '<div class="tools-empty">Start with a public video or Short URL to unlock metadata preview, thumbnail export, transcripts, and exact format choices for single-item downloads.</div>',
-            unsafe_allow_html=True,
-        )
-        return
-
-    transcripts: list[TranscriptOption] = st.session_state.get("tools_single_transcripts", [])
-    formats: dict[str, list[FormatOption]] = st.session_state.get("tools_single_formats", {})
-    artifacts: dict[str, PreparedArtifact] = st.session_state.get("tools_single_artifacts", {})
-
-    preview_cols = st.columns([1.25, 0.85], gap="large")
-    with preview_cols[0]:
-        _render_metadata_card(preview, transcripts)
-    with preview_cols[1]:
-        with st.container(border=True):
-            st.markdown("### Thumbnail Preview")
-            if preview.thumbnail_url:
-                st.image(preview.thumbnail_url, use_container_width=True)
+        background = "opaque"
+        output_format = "png"
+        with st.expander("Advanced generation options", expanded=False):
+            if provider == "openai":
+                advanced_cols = st.columns(2)
+                with advanced_cols[0]:
+                    background = st.selectbox("Background", model_meta.get("background_options", ["opaque"]), key="media_lab_generate_background")
+                with advanced_cols[1]:
+                    output_format = st.selectbox("Format", model_meta.get("format_options", ["png"]), key="media_lab_generate_format")
             else:
-                st.info("No thumbnail is available for this video.")
-            st.markdown('<div class="tools-download-note">Thumbnail quality options depend on the variants exposed by YouTube for this video.</div>', unsafe_allow_html=True)
+                st.caption("Gemini image generation in this app currently uses its native default output format.")
 
-    thumb_tab, transcript_tab, audio_tab, video_tab = st.tabs(["Thumbnail", "Transcript", "Audio", "Video"])
+        estimated_cost = _estimate_image_cost(provider, model, count, size, quality)
+        st.caption(f"Estimated spend for this run: about ${estimated_cost:.4f}.")
 
-    with thumb_tab:
-        with st.container(border=True):
-            quality_options = list(preview.thumbnail_variants.keys()) or ["Best Available"]
-            selected_quality = st.selectbox(
-                "Thumbnail Quality",
-                quality_options,
-                index=0,
-                key="tools_single_thumbnail_quality",
-            )
-            if st.button("Prepare Thumbnail Download", type="primary", use_container_width=True, key="tools_prepare_thumbnail"):
-                with st.spinner("Preparing thumbnail..."):
-                    artifact = prepare_thumbnail_download(preview.webpage_url, selected_quality)
-                _register_artifacts([artifact])
-                artifacts["thumbnail"] = artifact
-                st.session_state["tools_single_artifacts"] = artifacts
-            if artifacts.get("thumbnail"):
-                _render_artifact_card(
-                    "Prepared Thumbnail",
-                    artifacts["thumbnail"],
-                    button_label="Download Thumbnail",
-                    key_prefix="tools_single_thumbnail",
-                )
-
-    with transcript_tab:
-        with st.container(border=True):
-            if not transcripts:
-                st.info("No public transcript is available for this video.")
-            else:
-                transcript_labels = [f"{option.language_label} ({option.language_code})" for option in transcripts]
-                selected_label = st.selectbox(
-                    "Transcript Language",
-                    transcript_labels,
-                    index=0,
-                    key="tools_single_transcript_language",
-                )
-                option = transcripts[transcript_labels.index(selected_label)]
-                if st.button("Prepare Transcript Export", type="primary", use_container_width=True, key="tools_prepare_transcript"):
-                    with st.spinner("Fetching transcript..."):
-                        transcript_text = fetch_transcript_text(preview.video_id, option.language_code)
-                        artifact = prepare_transcript_download(preview.video_id, option.language_code, video_title=preview.title)
-                    _register_artifacts([artifact])
-                    artifacts["transcript"] = artifact
-                    st.session_state["tools_single_artifacts"] = artifacts
-                    st.session_state["tools_single_transcript_text"] = transcript_text
-                if st.session_state.get("tools_single_transcript_text"):
-                    st.text_area(
-                        "Transcript Preview",
-                        value=st.session_state["tools_single_transcript_text"],
-                        height=240,
-                        key="tools_single_transcript_preview",
-                    )
-                if artifacts.get("transcript"):
-                    _render_artifact_card(
-                        "Prepared Transcript",
-                        artifacts["transcript"],
-                        button_label="Download Transcript",
-                        key_prefix="tools_single_transcript",
-                    )
-
-    with audio_tab:
-        with st.container(border=True):
-            audio_formats = formats.get("audio", [])
-            if not audio_formats:
-                st.info("No downloadable audio-only formats are available for this video.")
-            else:
-                selected_audio = st.selectbox(
-                    "Audio Format",
-                    options=audio_formats,
-                    index=0,
-                    format_func=lambda option: option.label,
-                    key="tools_single_audio_format",
-                )
-                if selected_audio.filesize_estimate and selected_audio.filesize_estimate > STREAMLIT_DOWNLOAD_LIMIT_BYTES:
-                    st.warning("This audio format may be too large for an in-app download button. You can still try preparing it.")
-                if st.button("Prepare Audio Download", type="primary", use_container_width=True, key="tools_prepare_audio"):
-                    with st.spinner("Preparing audio..."):
-                        artifact = prepare_audio_download(preview.webpage_url, selected_audio.selector)
-                    _register_artifacts([artifact])
-                    artifacts["audio"] = artifact
-                    st.session_state["tools_single_artifacts"] = artifacts
-                if artifacts.get("audio"):
-                    _render_artifact_card(
-                        "Prepared Audio",
-                        artifacts["audio"],
-                        button_label="Download Audio",
-                        key_prefix="tools_single_audio",
-                    )
-
-    with video_tab:
-        with st.container(border=True):
-            video_formats = formats.get("video", [])
-            if not video_formats:
-                st.info("No downloadable video formats are available in the current environment.")
-            else:
-                selected_video = st.selectbox(
-                    "Video Format",
-                    options=video_formats,
-                    index=0,
-                    format_func=lambda option: option.label,
-                    key="tools_single_video_format",
-                )
-                if selected_video.requires_ffmpeg and not ffmpeg_available():
-                    st.warning("This format requires FFmpeg for audio/video merging.")
-                if selected_video.filesize_estimate and selected_video.filesize_estimate > STREAMLIT_DOWNLOAD_LIMIT_BYTES:
-                    st.warning("This video format may be too large for an in-app download button. You can still try preparing it.")
-                if st.button("Prepare Video Download", type="primary", use_container_width=True, key="tools_prepare_video"):
-                    with st.spinner("Preparing video..."):
-                        artifact = prepare_video_download(preview.webpage_url, selected_video.selector)
-                    _register_artifacts([artifact])
-                    artifacts["video"] = artifact
-                    st.session_state["tools_single_artifacts"] = artifacts
-                if artifacts.get("video"):
-                    _render_artifact_card(
-                        "Prepared Video",
-                        artifacts["video"],
-                        button_label="Download Video",
-                        key_prefix="tools_single_video",
-                    )
-
-
-def _render_batch_tab() -> None:
-    left, right = st.columns([1.35, 0.95], gap="large")
-    with left:
-        with st.container(border=True):
-            st.markdown("### Batch")
-            st.caption("Paste one public YouTube URL per line. Batch mode processes items sequentially and keeps each result separate.")
-            with st.form("tools_batch_form", clear_on_submit=False):
-                raw_urls = st.text_area(
-                    "YouTube URLs",
-                    key="tools_batch_urls",
-                    height=180,
-                    placeholder="https://www.youtube.com/watch?v=...\nhttps://youtu.be/...\nhttps://www.youtube.com/shorts/...",
-                )
-                operation_label = st.selectbox(
-                    "Operation",
-                    list(OPERATION_OPTIONS.keys()),
-                    index=0,
-                    key="tools_batch_operation",
-                )
-                operation = OPERATION_OPTIONS[operation_label]
-                options = _batch_options_ui("tools_batch", operation)
-                _render_operation_help(operation)
-                submitted = st.form_submit_button("Run Batch", type="primary", use_container_width=True)
-            if submitted:
-                urls = _split_url_lines(raw_urls)
-                if not urls:
-                    st.session_state["tools_batch_error"] = "Paste at least one public YouTube URL."
-                    st.session_state.pop("tools_batch_results", None)
-                else:
-                    try:
-                        cleanup_temp_dirs(st.session_state.get("tools_temp_paths", []))
-                        st.session_state["tools_temp_paths"] = []
-                        with st.spinner("Processing batch items..."):
-                            results = prepare_batch_operation(urls, operation, options=options)
-                        all_artifacts = [artifact for result in results for artifact in result.artifacts]
-                        _register_artifacts(all_artifacts)
-                        st.session_state["tools_batch_results"] = results
-                        st.session_state["tools_batch_error"] = ""
-                    except Exception as exc:
-                        st.session_state["tools_batch_error"] = str(exc)
-                        st.session_state.pop("tools_batch_results", None)
-
-    with right:
-        urls = _split_url_lines(st.session_state.get("tools_batch_urls", ""))
-        batch_operation = OPERATION_OPTIONS.get(st.session_state.get("tools_batch_operation", "Metadata Preview"), "metadata")
-        _summary_card(
-            "Batch Configuration",
-            "Batch mode is best for metadata, thumbnails, transcripts, and smaller media runs. Results stay itemized so failures do not block the whole batch.",
-            [
-                ("URL Count", str(len(urls))),
-                ("Operation", batch_operation.replace("_", " ").title()),
-                ("FFmpeg", "Available" if ffmpeg_available() else "Not Installed"),
-                ("Delivery Limit", f"{STREAMLIT_DOWNLOAD_LIMIT_BYTES // (1024 * 1024)} MB In-App"),
-            ],
-        )
-
-    if st.session_state.get("tools_batch_error"):
-        st.error(st.session_state["tools_batch_error"])
-
-    results: list[BatchItemResult] = st.session_state.get("tools_batch_results", [])
-    if not results:
-        st.markdown(
-            '<div class="tools-empty">Batch mode will show a status table first, followed by one expandable result card per item. Media downloads stay per-item in this version instead of being bundled into archives.</div>',
-            unsafe_allow_html=True,
-        )
-        return
-
-    section_header("Batch Results", "Review item-level statuses first, then open individual result cards to download artifacts or inspect failures.")
-    _render_results_table(results, title="Batch Status")
-    _render_batch_result_cards(results, key_prefix="tools_batch")
-
-
-def _render_playlist_tab() -> None:
-    left, right = st.columns([1.35, 0.95], gap="large")
-    with left:
-        with st.container(border=True):
-            st.markdown("### Playlist")
-            st.caption("Load a public playlist, choose which items to process, then run one operation across the selected videos.")
-            with st.form("tools_playlist_load_form", clear_on_submit=False):
-                playlist_url = st.text_input(
-                    "Playlist URL",
-                    key="tools_playlist_url",
-                    placeholder="https://www.youtube.com/playlist?list=...",
-                )
-                playlist_limit = st.slider(
-                    "Preview Item Limit",
-                    min_value=5,
-                    max_value=50,
-                    value=PLAYLIST_PREVIEW_LIMIT_DEFAULT,
-                    step=5,
-                    key="tools_playlist_limit",
-                )
-                load_clicked = st.form_submit_button("Load Playlist", type="primary", use_container_width=True)
-            if load_clicked:
-                try:
-                    preview = fetch_playlist_preview(playlist_url, max_items=playlist_limit)
-                    st.session_state["tools_playlist_preview"] = preview
-                    st.session_state["tools_playlist_error"] = ""
-                    st.session_state.pop("tools_playlist_results", None)
-                except Exception as exc:
-                    st.session_state["tools_playlist_error"] = str(exc)
-                    st.session_state.pop("tools_playlist_preview", None)
-
-    preview: PlaylistPreview | None = st.session_state.get("tools_playlist_preview")
-    with right:
-        _summary_card(
-            "Playlist Summary",
-            "Playlist mode previews public entries first, then applies one operation across the selected subset with per-item statuses and downloads.",
-            [
-                ("Playlist", preview.title if preview else "Not Loaded"),
-                ("Preview Items", str(len(preview.entries)) if preview else "0"),
-                ("FFmpeg", "Available" if ffmpeg_available() else "Not Installed"),
-                ("Delivery Limit", f"{STREAMLIT_DOWNLOAD_LIMIT_BYTES // (1024 * 1024)} MB In-App"),
-            ],
-        )
-
-    if st.session_state.get("tools_playlist_error"):
-        st.error(st.session_state["tools_playlist_error"])
-
-    if not preview:
-        st.markdown(
-            '<div class="tools-empty">Load a public playlist to preview entries, select items, and run transcript, thumbnail, audio, or video operations with per-item results.</div>',
-            unsafe_allow_html=True,
-        )
-        return
-
-    options = {f"{entry.title} — {entry.channel}": entry.video_id for entry in preview.entries}
-    with st.container(border=True):
-        st.markdown("### Playlist Run Configuration")
-        with st.form("tools_playlist_run_form", clear_on_submit=False):
-            selected_labels = st.multiselect(
-                "Select Playlist Items",
-                options=list(options.keys()),
-                default=list(options.keys()),
-                key="tools_playlist_selected_labels",
-            )
-            operation_label = st.selectbox(
-                "Operation",
-                list(OPERATION_OPTIONS.keys()),
-                index=0,
-                key="tools_playlist_operation",
-            )
-            operation = OPERATION_OPTIONS[operation_label]
-            playlist_options = _batch_options_ui("tools_playlist", operation)
-            playlist_options["playlist_max_items"] = st.session_state.get("tools_playlist_limit", PLAYLIST_PREVIEW_LIMIT_DEFAULT)
-            _render_operation_help(operation)
-            run_clicked = st.form_submit_button("Run Playlist Operation", type="primary", use_container_width=True)
-        if run_clicked:
-            selected_ids = [options[label] for label in selected_labels]
-            if not selected_ids:
-                st.session_state["tools_playlist_error"] = "Select at least one playlist item."
-                st.session_state.pop("tools_playlist_results", None)
+        if st.button("Generate Thumbnail Concepts", type="primary", use_container_width=True, key="media_lab_generate_button"):
+            if not api_key:
+                st.error("Add a provider API key in the field above or via Streamlit secrets.")
+            elif not title.strip() or not context.strip():
+                st.error("Both a title and creative context are required.")
             else:
                 try:
-                    cleanup_temp_dirs(st.session_state.get("tools_temp_paths", []))
-                    st.session_state["tools_temp_paths"] = []
-                    with st.spinner("Processing selected playlist items..."):
-                        results = prepare_playlist_operation(
-                            st.session_state.get("tools_playlist_url", ""),
-                            selected_ids,
-                            operation,
-                            options=playlist_options,
+                    with st.spinner("Generating thumbnails..."):
+                        generator = ThumbnailGenerator(provider=provider, api_key=api_key, model=model)
+                        images = generator.generate(
+                            title=title,
+                            context=context,
+                            style=style,
+                            negative_prompt=negative_prompt,
+                            count=count,
+                            size=size,
+                            quality=quality,
+                            output_format=output_format if provider == "openai" else None,
+                            background=background if provider == "openai" else None,
                         )
-                    all_artifacts = [artifact for result in results for artifact in result.artifacts]
-                    _register_artifacts(all_artifacts)
-                    st.session_state["tools_playlist_results"] = results
-                    st.session_state["tools_playlist_error"] = ""
+                    output_dir = Path("outputs") / "thumbnails"
+                    output_dir.mkdir(parents=True, exist_ok=True)
+                    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                    generated_images: list[dict[str, Any]] = []
+                    for index, image in enumerate(images, start=1):
+                        extension = "png" if "png" in image.mime_type else "jpg"
+                        file_name = f"thumbnail_{timestamp}_{index}.{extension}"
+                        file_path = output_dir / file_name
+                        file_path.write_bytes(image.image_bytes)
+                        generated_images.append(
+                            {
+                                "file_name": file_name,
+                                "mime_type": image.mime_type,
+                                "image_bytes": image.image_bytes,
+                            }
+                        )
+                    st.session_state["media_lab_generated_images"] = generated_images
                 except Exception as exc:
-                    st.session_state["tools_playlist_error"] = str(exc)
-                    st.session_state.pop("tools_playlist_results", None)
+                    _render_error(map_media_error(exc.__cause__ or exc))
 
-    results: list[BatchItemResult] = st.session_state.get("tools_playlist_results", [])
-    if not results:
-        return
+        generated_images: list[dict[str, Any]] = st.session_state.get("media_lab_generated_images", [])
+        if generated_images:
+            gallery_cols = st.columns(min(len(generated_images), 3) or 1, gap="large")
+            for index, image in enumerate(generated_images):
+                with gallery_cols[index % len(gallery_cols)]:
+                    st.markdown("<div class='media-lab-thumb-card'>", unsafe_allow_html=True)
+                    st.image(image["image_bytes"], use_container_width=True)
+                    st.download_button(
+                        "Download Concept",
+                        data=image["image_bytes"],
+                        file_name=image["file_name"],
+                        mime=image["mime_type"],
+                        use_container_width=True,
+                        key=f"media_lab_generated_download_{index}",
+                    )
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-    section_header("Playlist Results", "Selected items are processed sequentially so each entry can succeed or fail independently.")
-    _render_results_table(results, title="Playlist Status")
-    _render_batch_result_cards(results, key_prefix="tools_playlist")
+
+def _render_audio_panel(preview: VideoMetadata | None, formats: dict[str, list[FormatOption]] | None) -> None:
+    with st.container(border=True):
+        section_header("Audio Download", subtitle="Prepare an MP3 by default, with a lighter advanced path for the original audio container.")
+        if not preview:
+            st.markdown('<div class="media-lab-empty">Load a video first to prepare audio downloads.</div>', unsafe_allow_html=True)
+            return
+
+        default_audio_label = "MP3 (Recommended)" if ffmpeg_available() else "Best Audio (Original Container)"
+        audio_label = st.selectbox(
+            "Audio Output",
+            list(AUDIO_PROFILE_OPTIONS.keys()),
+            index=list(AUDIO_PROFILE_OPTIONS.keys()).index(default_audio_label),
+            key="media_lab_audio_profile",
+        )
+        if audio_label == "MP3 (Recommended)" and not ffmpeg_available():
+            st.warning("FFmpeg is not installed, so MP3 conversion is not available in this environment.")
+
+        with st.expander("Advanced audio details", expanded=False):
+            audio_formats = (formats or {}).get("audio", [])
+            if audio_formats:
+                st.caption(f"Discovered {len(audio_formats)} audio-only source formats for this video.")
+            else:
+                st.caption("No dedicated audio-only formats were discovered; yt-dlp will still try the best available audio stream.")
+
+        if st.button("Prepare Audio File", type="primary", use_container_width=True, key="media_lab_prepare_audio"):
+            status_slot, progress = _progress_widgets("media_lab_audio_progress")
+            try:
+                artifact = prepare_audio_download(
+                    preview.webpage_url,
+                    AUDIO_PROFILE_OPTIONS[audio_label],
+                    progress_callback=_progress_callback_factory(status_slot, progress),
+                )
+                _register_temp_paths(artifact)
+                st.session_state["media_lab_audio_artifact"] = artifact
+            except Exception as exc:
+                _set_progress(status_slot, progress, percent=1.0, message="Audio preparation failed.")
+                _render_error(map_media_error(exc.__cause__ or exc))
+                return
+
+        artifact: PreparedArtifact | None = st.session_state.get("media_lab_audio_artifact")
+        if artifact:
+            _render_artifact_panel(
+                "Prepared Audio File",
+                "Audio artifacts are temporary. Re-run the preparation step if the file is cleaned up between sessions.",
+                artifact,
+                button_label="Download Audio",
+                key="media_lab_audio_download",
+            )
+
+
+def _render_video_panel(preview: VideoMetadata | None, formats: dict[str, list[FormatOption]] | None) -> None:
+    with st.container(border=True):
+        section_header("Video Download", subtitle="Prepare an MP4 using yt-dlp with quality profiles instead of batch-heavy format pickers.")
+        if not preview:
+            st.markdown('<div class="media-lab-empty">Load a video first to prepare MP4 downloads.</div>', unsafe_allow_html=True)
+            return
+
+        video_label = st.selectbox(
+            "Video Quality",
+            list(VIDEO_PROFILE_OPTIONS.keys()),
+            index=1,
+            key="media_lab_video_profile",
+        )
+        with st.expander("Advanced video details", expanded=False):
+            video_formats = (formats or {}).get("video", [])
+            if video_formats:
+                st.caption(f"Discovered {len(video_formats)} downloadable video format candidates. The app still uses quality profiles for predictable MP4 outputs.")
+            else:
+                st.caption("No video candidates were discovered yet. Some videos still download successfully through yt-dlp profile selection.")
+
+        if st.button("Prepare Video File", type="primary", use_container_width=True, key="media_lab_prepare_video"):
+            status_slot, progress = _progress_widgets("media_lab_video_progress")
+            try:
+                artifact = prepare_video_download(
+                    preview.webpage_url,
+                    VIDEO_PROFILE_OPTIONS[video_label],
+                    progress_callback=_progress_callback_factory(status_slot, progress),
+                )
+                _register_temp_paths(artifact)
+                st.session_state["media_lab_video_artifact"] = artifact
+            except Exception as exc:
+                _set_progress(status_slot, progress, percent=1.0, message="Video preparation failed.")
+                _render_error(map_media_error(exc.__cause__ or exc))
+                return
+
+        artifact: PreparedArtifact | None = st.session_state.get("media_lab_video_artifact")
+        if artifact:
+            _render_artifact_panel(
+                "Prepared Video File",
+                "Video artifacts are prepared as temporary files and stay subject to the Streamlit in-app download limit.",
+                artifact,
+                button_label="Download Video",
+                key="media_lab_video_download",
+            )
 
 
 def render() -> None:
-    _inject_tools_css()
-    st.markdown('<div class="tools-page">', unsafe_allow_html=True)
+    _inject_media_lab_css()
+    st.markdown('<div class="media-lab-page">', unsafe_allow_html=True)
     _render_hero()
-    single_tab, batch_tab, playlist_tab = st.tabs(["Single", "Batch", "Playlist"])
-    with single_tab:
-        _render_single_tab()
-    with batch_tab:
-        _render_batch_tab()
-    with playlist_tab:
-        _render_playlist_tab()
+
+    preview: VideoMetadata | None = st.session_state.get("media_lab_preview")
+    formats: dict[str, list[FormatOption]] | None = st.session_state.get("media_lab_formats")
+    transcripts: list[TranscriptOption] | None = st.session_state.get("media_lab_transcripts")
+    thumbnail_preview: ThumbnailPreview | None = st.session_state.get("media_lab_thumbnail_preview")
+
+    lookup_col, summary_col = st.columns([1.25, 0.95], gap="large")
+    with lookup_col:
+        _lookup_video()
+        if st.session_state.get("media_lab_error"):
+            _render_error(map_media_error(st.session_state["media_lab_error"].__cause__ or st.session_state["media_lab_error"]))
+    with summary_col:
+        _render_summary_cards(preview, formats, transcripts)
+
+    preview = st.session_state.get("media_lab_preview")
+    formats = st.session_state.get("media_lab_formats")
+    transcripts = st.session_state.get("media_lab_transcripts", [])
+    thumbnail_preview = st.session_state.get("media_lab_thumbnail_preview")
+
+    if not preview:
+        st.markdown(
+            '<div class="media-lab-empty">Start with a public YouTube video or Short URL to unlock transcript extraction, thumbnail tools, MP4 preparation, and MP3 download.</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+        return
+
+    _render_metadata(preview, thumbnail_preview)
+
+    top_left, top_right = st.columns([1.0, 1.0], gap="large")
+    with top_left:
+        _render_transcript_panel(preview, transcripts)
+    with top_right:
+        _render_thumbnail_download_panel(thumbnail_preview)
+
+    bottom_left, bottom_right = st.columns([1.0, 1.0], gap="large")
+    with bottom_left:
+        _render_audio_panel(preview, formats)
+    with bottom_right:
+        _render_video_panel(preview, formats)
+
     st.markdown(
         (
-            '<div class="tools-card" style="margin-top:1.5rem;">'
-            '<div class="tools-card-title">Tools Notes</div>'
-            '<div class="tools-card-copy">'
-            'The Tools page works with public YouTube URLs only. Private, members-only, age-gated, or region-restricted videos may fail. '
-            'Downloads are prepared into temporary files and are not persisted by the app. Large files may be blocked from in-app delivery to keep the Streamlit session stable.'
+            '<div class="media-lab-bento" style="margin-top:1rem;">'
+            '<div class="media-lab-card-title">Media Lab Notes</div>'
+            '<div class="media-lab-card-copy">'
+            'This workflow only supports public YouTube videos and Shorts. Private, members-only, age-restricted, region-restricted, or removed videos may fail. '
+            'Downloads are prepared into temporary files and may be blocked if they exceed the safe in-app size limit.'
             '</div>'
             '</div>'
         ),

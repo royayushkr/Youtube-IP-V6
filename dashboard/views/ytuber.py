@@ -260,9 +260,9 @@ def _inject_ytuber_css() -> None:
             gap: 0.55rem;
             padding: 0.42rem 0.78rem;
             border-radius: 999px;
-            background: rgba(255, 0, 0, 0.12);
-            border: 1px solid rgba(255, 0, 0, 0.35);
-            color: #FF8888;
+            background: rgba(255, 0, 51, 0.08);
+            border: 1px solid rgba(255, 0, 51, 0.16);
+            color: #C62828;
             font-size: 12px;
             letter-spacing: 0.10em;
             text-transform: uppercase;
@@ -272,14 +272,14 @@ def _inject_ytuber_css() -> None:
             width: 8px;
             height: 8px;
             border-radius: 999px;
-            background: #FF0000;
-            box-shadow: 0 0 14px rgba(255, 0, 0, 0.5);
+            background: linear-gradient(180deg, #FF0033 0%, #D92D20 100%);
+            box-shadow: 0 0 14px rgba(255, 0, 51, 0.22);
         }
         .ytuber-kicker {
             font-size: 12px;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: #00D4FF;
+            color: #D92D20;
             margin-bottom: 0.5rem;
         }
         .ytuber-title {
@@ -287,14 +287,14 @@ def _inject_ytuber_css() -> None:
             font-size: clamp(32px, 4vw, 50px);
             line-height: 1.02;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             max-width: 760px;
             margin: 0 auto 0.7rem;
             letter-spacing: -0.035em;
         }
         .ytuber-subtitle {
             font-size: 15px;
-            color: #B0B0B0;
+            color: #667085;
             max-width: 680px;
             margin: 0 auto;
             font-weight: 500;
@@ -302,30 +302,30 @@ def _inject_ytuber_css() -> None:
         .ytuber-search-meta {
             margin-top: 0.9rem;
             font-size: 13px;
-            color: #8b8ba8;
+            color: #667085;
         }
         .ytuber-command-title {
             font-size: 18px;
-            color: #FFFFFF;
+            color: #101828;
             font-weight: 700;
             margin-bottom: 0.2rem;
             text-align: center;
         }
         .ytuber-command-subtitle {
             font-size: 13px;
-            color: #B0B0B0;
+            color: #667085;
             margin-bottom: 0.85rem;
             text-align: center;
         }
         .ytuber-toolbar-note {
             font-size: 12px;
-            color: #B0B0B0;
+            color: #667085;
             margin-top: 0.45rem;
             text-align: center;
         }
         .ytuber-empty-copy {
             text-align: center;
-            color: #8b8ba8;
+            color: #667085;
             font-size: 13px;
             margin: 0.6rem 0 0.2rem;
         }
@@ -333,51 +333,51 @@ def _inject_ytuber_css() -> None:
             border-radius: 20px;
             padding: 0.95rem 1rem;
             margin-bottom: 1rem;
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.08) 0%, rgba(15, 15, 35, 0.92) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
             border-left: 4px solid #FF0000;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
         }
         .ytuber-banner-title {
             font-size: 18px;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             margin-bottom: 0.25rem;
         }
         .ytuber-banner-meta {
             font-size: 13px;
-            color: #00D4FF;
+            color: #D92D20;
         }
         .ytuber-footer-card {
             padding: 0.48rem 0.62rem;
             border-radius: 14px;
-            background: rgba(15, 15, 35, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
         }
         .ytuber-footer-label {
             font-size: 10px;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #8b8ba8;
+            color: #667085;
         }
         .ytuber-footer-value {
             font-size: 15px;
             font-weight: 700;
-            color: #FFFFFF;
+            color: #101828;
             line-height: 1.2;
             margin-top: 0.1rem;
         }
         .ytuber-footer-detail {
             font-size: 11px;
-            color: #B0B0B0;
+            color: #667085;
             margin-top: 0.08rem;
         }
         .outlier-card {
             border-radius: 20px;
             overflow: hidden;
-            background: linear-gradient(180deg, rgba(22, 33, 62, 0.4) 0%, rgba(15, 15, 35, 0.95) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             margin-bottom: 1rem;
         }
         .outlier-card img {
@@ -385,7 +385,7 @@ def _inject_ytuber_css() -> None:
             height: 180px;
             object-fit: cover;
             display: block;
-            background: rgba(15, 15, 35, 0.5);
+            background: rgba(248, 250, 252, 1);
         }
         .outlier-card-body {
             padding: 0.9rem 1rem 1rem;
@@ -400,13 +400,13 @@ def _inject_ytuber_css() -> None:
         .outlier-card-title {
             font-size: 16px;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             line-height: 1.35;
             margin-bottom: 0.2rem;
         }
         .outlier-card-channel {
             font-size: 12px;
-            color: #00D4FF;
+            color: #D92D20;
         }
         .outlier-score-badge {
             flex-shrink: 0;
@@ -414,9 +414,9 @@ def _inject_ytuber_css() -> None:
             text-align: center;
             padding: 0.4rem 0.6rem;
             border-radius: 16px;
-            background: rgba(255, 0, 0, 0.12);
-            border: 1px solid rgba(255, 0, 0, 0.35);
-            color: #FF6090;
+            background: rgba(255, 0, 51, 0.08);
+            border: 1px solid rgba(255, 0, 51, 0.14);
+            color: #B42318;
         }
         .outlier-score-value {
             font-size: 20px;
@@ -427,7 +427,7 @@ def _inject_ytuber_css() -> None:
             font-size: 10px;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #8b8ba8;
+            color: #667085;
             margin-top: 0.15rem;
         }
         .outlier-metrics {
@@ -439,15 +439,15 @@ def _inject_ytuber_css() -> None:
         .outlier-metric-pill {
             padding: 0.28rem 0.55rem;
             border-radius: 999px;
-            background: rgba(22, 33, 62, 0.65);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
             font-size: 11px;
-            color: #d0d0e0;
+            color: #475467;
         }
         .outlier-reasons {
             margin: 0;
             padding-left: 1rem;
-            color: #d0d0e0;
+            color: #475467;
             font-size: 12px;
             line-height: 1.5;
         }
@@ -457,7 +457,7 @@ def _inject_ytuber_css() -> None:
         .outlier-link {
             margin-top: 0.7rem;
             display: inline-block;
-            color: #00D4FF !important;
+            color: #D92D20 !important;
             font-size: 12px;
             font-weight: 600;
             text-decoration: none;
@@ -465,16 +465,16 @@ def _inject_ytuber_css() -> None:
         .ytuber-score-card {
             padding: 1rem 1.05rem;
             border-radius: 20px;
-            background: linear-gradient(160deg, rgba(22, 33, 62, 0.5) 0%, rgba(15, 15, 35, 0.92) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             margin-bottom: 0.8rem;
         }
         .ytuber-score-label {
             font-size: 11px;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #8b8ba8;
+            color: #667085;
             margin-bottom: 0.3rem;
         }
         .ytuber-score-head {
@@ -488,7 +488,7 @@ def _inject_ytuber_css() -> None:
             font-size: 38px;
             line-height: 1;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
         }
         .ytuber-score-pill {
             padding: 0.28rem 0.65rem;
@@ -502,43 +502,42 @@ def _inject_ytuber_css() -> None:
             height: 10px;
             border-radius: 999px;
             overflow: hidden;
-            background: rgba(22, 33, 62, 0.85);
+            background: rgba(15, 23, 42, 0.08);
             margin: 0.8rem 0 0.45rem;
         }
         .ytuber-score-bar span {
             display: block;
             height: 100%;
             border-radius: 999px;
-            background: linear-gradient(90deg, #FF0000 0%, #00D4FF 100%);
+            background: linear-gradient(90deg, #FF0033 0%, #FF5A76 100%);
         }
         .ytuber-score-note {
             font-size: 12px;
-            color: #B0B0B0;
+            color: #667085;
         }
         .ytuber-part-card {
             padding: 0.68rem 0.78rem;
             border-radius: 14px;
-            background: rgba(15, 15, 35, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
             margin-bottom: 0.55rem;
         }
         .ytuber-part-label {
             font-size: 11px;
-            color: #8b8ba8;
+            color: #667085;
             margin-bottom: 0.1rem;
         }
         .ytuber-part-value {
             font-size: 18px;
             font-weight: 700;
-            color: #FFFFFF;
+            color: #101828;
         }
         .ytuber-section-surface {
-            background: rgba(15, 15, 35, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.08);
             border-radius: 22px;
             padding: 1rem 1rem 0.5rem;
             margin-bottom: 1rem;
-            backdrop-filter: blur(8px);
         }
         .yt-section-header {
             font-size: 20px !important;
@@ -548,17 +547,17 @@ def _inject_ytuber_css() -> None:
         div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) [data-baseweb="input"] {
             min-height: 3.5rem !important;
             border-radius: 999px !important;
-            border: 1px solid rgba(255, 255, 255, 0.14) !important;
-            background: rgba(15, 15, 35, 0.85) !important;
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            background: #FFFFFF !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
         }
         div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) [data-baseweb="input"]:focus-within {
-            border-color: rgba(0, 212, 255, 0.55) !important;
-            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2), 0 12px 36px rgba(0, 0, 0, 0.35) !important;
+            border-color: rgba(255, 0, 51, 0.28) !important;
+            box-shadow: 0 0 0 2px rgba(255, 0, 51, 0.08), 0 12px 36px rgba(15, 23, 42, 0.12) !important;
         }
         div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) input {
             font-size: 16px !important;
-            color: #FFFFFF !important;
+            color: #101828 !important;
         }
         .stButton > button,
         .stFormSubmitButton > button {
@@ -566,7 +565,7 @@ def _inject_ytuber_css() -> None:
         }
         [data-testid="stToggle"] label p,
         [data-testid="stToggle"] small {
-            color: #d0d0e0 !important;
+            color: #475467 !important;
         }
         @media (max-width: 900px) {
             .ytuber-title {
@@ -1383,11 +1382,11 @@ def _render_outliers_shortcut(channel_df: pd.DataFrame, channel_title: str) -> N
     st.markdown(
         """
         <div class="yt-card" style="padding:1.15rem 1.2rem;">
-            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#B8C1DA;margin-bottom:0.3rem;">Standalone Research Tool</div>
+            <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#667085;margin-bottom:0.3rem;">Standalone Research Tool</div>
             <div style="font-size:24px;font-weight:800;color:#f8fafc;line-height:1.15;margin-bottom:0.45rem;">
                 Discover Breakout Videos In A Dedicated Research Workspace.
             </div>
-            <div style="font-size:14px;color:#B0B0B0;max-width:760px;">
+            <div style="font-size:14px;color:#667085;max-width:760px;">
                 Search any niche, tighten the filters, and move into a standalone page built for result-first scanning, breakout snapshots, structured AI research, and methodology notes.
             </div>
         </div>
@@ -1417,8 +1416,8 @@ def _render_outliers_shortcut(channel_df: pd.DataFrame, channel_title: str) -> N
     st.markdown(
         """
         <div class="yt-card" style="padding:0.9rem 1rem;">
-            <div style="font-size:13px;color:#FFFFFF;font-weight:700;margin-bottom:0.35rem;">Why the standalone page is better for this job</div>
-            <div style="font-size:13px;color:#B0B0B0;line-height:1.55;">
+            <div style="font-size:13px;color:#101828;font-weight:700;margin-bottom:0.35rem;">Why the standalone page is better for this job</div>
+            <div style="font-size:13px;color:#667085;line-height:1.55;">
                 It puts results first, then the breakout pattern snapshot, then structured AI research. It also supports stricter language filtering, exact versus broad matching, subscriber ranges, and cleaner niche-scanning controls.
             </div>
         </div>
@@ -1514,7 +1513,7 @@ def _openai_generate_text(openai_key: str, model: str, prompt: str) -> str:
                 "role": "system",
                 "content": (
                     "You are an advanced YouTube strategist supporting the "
-                    "YouTube IP V5 creator analytics platform. "
+                    "YouTube IP V6 creator analytics platform. "
                     "Keep outputs concise, structured, and actionable."
                 ),
             },
@@ -2593,8 +2592,8 @@ def _render_content_planner(channel_df: pd.DataFrame) -> None:
                 f"""
                 <div class="yt-card" style="padding:0.6rem 0.75rem;margin-bottom:0.6rem;">
                     <div style="font-size:11px;color:#64748b;">{row['week']}</div>
-                    <div style="font-size:16px;font-weight:600;color:#FFFFFF;">{row['publish_date_utc']}</div>
-                    <div style="font-size:12px;color:#B0B0B0;margin-bottom:0.15rem;">{row['publish_time_utc']} UTC</div>
+                    <div style="font-size:16px;font-weight:600;color:#101828;">{row['publish_date_utc']}</div>
+                    <div style="font-size:12px;color:#667085;margin-bottom:0.15rem;">{row['publish_time_utc']} UTC</div>
                     <div style="font-size:12px;color:#d0d0e0;">
                         <span class="keyword-chip">{row['topic_hint']}</span>
                     </div>
@@ -2892,7 +2891,7 @@ def _render_ai_studio(
                 st.markdown(
                     f"""
                     <div class="yt-card" style="margin-top:0.8rem;">
-                        <div style="font-size:13px;color:#B0B0B0;margin-bottom:0.35rem;">AI Output</div>
+                        <div style="font-size:13px;color:#667085;margin-bottom:0.35rem;">AI Output</div>
                         <pre style="white-space:pre-wrap;font-size:13px;color:#d0d0e0;background:rgba(15,15,35,0.92);padding:0.75rem;border-radius:10px;border:1px solid rgba(255,255,255,0.12);max-height:520px;overflow:auto;font-family:IBM Plex Mono,ui-monospace,monospace;">{output}</pre>
                     </div>
                     """,
@@ -2985,7 +2984,7 @@ def render() -> None:
         <div class="ytuber-hero">
             <div class="ytuber-brand-row">
                 <span class="ytuber-brand-dot"></span>
-                YouTube IP V5
+                YouTube IP V6
             </div>
             <div class="ytuber-kicker">Live workspace</div>
             <div class="ytuber-subtitle">

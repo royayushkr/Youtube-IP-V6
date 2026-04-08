@@ -1,67 +1,10 @@
+from pathlib import Path
+
 from src.services import youtube_tools
+from src.services.media_error_service import map_media_error
 
 
-def test_prepare_playlist_operation_respects_selected_ids(monkeypatch) -> None:
-    preview = youtube_tools.PlaylistPreview(
-        title="Testing Playlist",
-        entries=(
-            youtube_tools.VideoMetadata(
-                title="Video One",
-                channel="Channel One",
-                duration_seconds=120,
-                duration_label="2:00",
-                publish_date=None,
-                video_id="video-1",
-                content_type="Video",
-                webpage_url="https://www.youtube.com/watch?v=video-1",
-                thumbnail_url=None,
-            ),
-            youtube_tools.VideoMetadata(
-                title="Video Two",
-                channel="Channel Two",
-                duration_seconds=180,
-                duration_label="3:00",
-                publish_date=None,
-                video_id="video-2",
-                content_type="Video",
-                webpage_url="https://www.youtube.com/watch?v=video-2",
-                thumbnail_url=None,
-            ),
-        ),
-    )
-    monkeypatch.setattr(youtube_tools, "fetch_playlist_preview", lambda url, max_items=25: preview)
-
-    captured = {}
-
-    def fake_prepare_batch(urls, operation, options=None):
-        captured["urls"] = urls
-        captured["operation"] = operation
-        return [
-            youtube_tools.BatchItemResult(
-                source_url=item_url,
-                status="ready",
-                message="Ready",
-                metadata=preview.entries[0],
-                artifacts=(),
-            )
-            for item_url in urls
-        ]
-
-    monkeypatch.setattr(youtube_tools, "prepare_batch_operation", fake_prepare_batch)
-
-    results = youtube_tools.prepare_playlist_operation(
-        "https://www.youtube.com/playlist?list=PL123",
-        ["video-2"],
-        "metadata",
-        options={"playlist_max_items": 10},
-    )
-
-    assert captured["urls"] == ["https://www.youtube.com/watch?v=video-2"]
-    assert captured["operation"] == "metadata"
-    assert len(results) == 1
-
-
-def test_prepare_batch_operation_with_thumbnail_artifacts(monkeypatch) -> None:
+def test_prepare_video_download_returns_prepared_artifact(monkeypatch, tmp_path) -> None:
     metadata = youtube_tools.VideoMetadata(
         title="Example",
         channel="Channel",
@@ -73,24 +16,56 @@ def test_prepare_batch_operation_with_thumbnail_artifacts(monkeypatch) -> None:
         webpage_url="https://www.youtube.com/watch?v=video-1",
         thumbnail_url="https://img.youtube.com/vi/video-1/hqdefault.jpg",
     )
-    artifact = youtube_tools.PreparedArtifact(
-        file_path="/tmp/thumbnail.jpg",
-        file_name="thumbnail.jpg",
-        mime_type="image/jpeg",
-        size_bytes=1024,
-        source_item_id="video-1",
-        artifact_type="thumbnail",
+    monkeypatch.setattr(youtube_tools, "fetch_video_metadata", lambda value: metadata)
+    monkeypatch.setattr(
+        youtube_tools,
+        "validate_youtube_url",
+        lambda value: youtube_tools.ResolvedYoutubeTarget(
+            input_value=value,
+            canonical_url="https://www.youtube.com/watch?v=video-1",
+            target_type="video",
+            video_id="video-1",
+        ),
+    )
+    monkeypatch.setattr(youtube_tools, "safe_temp_dir", lambda prefix: tmp_path)
+    monkeypatch.setattr(youtube_tools, "ffmpeg_available", lambda: True)
+
+    class _FakeYDL:
+        def __init__(self, options):
+            self.options = options
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def extract_info(self, url, download=False):
+            if download:
+                for hook in self.options.get("progress_hooks") or []:
+                    hook({"status": "downloading", "downloaded_bytes": 10_000_000, "total_bytes": 20_000_000})
+                    hook({"status": "finished"})
+                output_template = self.options["outtmpl"]["default"]
+                output_path = Path(output_template.replace("%(ext)s", "mp4"))
+                output_path.write_bytes(b"video")
+            return {"id": "video-1"}
+
+    monkeypatch.setattr(youtube_tools.yt_dlp, "YoutubeDL", _FakeYDL)
+
+    updates = []
+    artifact = youtube_tools.prepare_video_download(
+        "https://www.youtube.com/watch?v=video-1",
+        "up_to_1080p",
+        progress_callback=updates.append,
     )
 
-    monkeypatch.setattr(youtube_tools, "fetch_video_metadata", lambda url: metadata)
-    monkeypatch.setattr(youtube_tools, "prepare_thumbnail_download", lambda url, quality_key=None: artifact)
+    assert artifact.file_name.endswith(".mp4")
+    assert artifact.size_bytes > 0
+    assert updates[-1]["stage"] == "ready"
 
-    results = youtube_tools.prepare_batch_operation(
-        ["https://www.youtube.com/watch?v=video-1"],
-        "thumbnail",
-        options={"thumbnail_quality": "Best Available"},
-    )
 
-    assert len(results) == 1
-    assert results[0].status == "ready"
-    assert results[0].artifacts[0].file_name == "thumbnail.jpg"
+def test_media_error_mapper_explains_restricted_video() -> None:
+    info = map_media_error("Sign in to confirm your age. This video may be inappropriate for some users.")
+
+    assert info.title == "Age-restricted video"
+    assert "public workflow" in info.message

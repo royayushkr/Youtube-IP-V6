@@ -1,19 +1,18 @@
-# V5 Deployment, Versions, And Model Flow
+# V6 Deployment, Versions, And Model Flow
 
-This document tracks the deployment story across all five released versions and explains how the current V5 runtime, secrets, and optional BERTopic path are deployed.
+This document tracks the deployment story across all six released versions and explains how the current V6 runtime, secrets, deploy targets, and optional BERTopic path are wired today.
 
-For the current section-by-section runtime behavior, see [Architecture](ARCHITECTURE.md). This file stays focused on deployment, branch targets, version comparisons, and the model-artifact path.
+For the current section-by-section runtime behavior, see [Architecture](ARCHITECTURE.md). This file stays focused on deployment, version comparisons, repo targets, and the model-artifact path.
 
-## Current V5 Branch And Repo Targets
+## Current V6 Branch And Repo Targets
 
 | Item | Value |
 | --- | --- |
-| Original repo branch tag | `youtube-ip-v5` |
-| Original repo | `matt-foor/purdue-youtube-ip` |
-| Deploy repo | `royayushkr/Youtube-IP-V5` |
+| Current source branch | [Debadri1999/IP-Youtube-Creator-Insight/tree/youtube-ip-v6](https://github.com/Debadri1999/IP-Youtube-Creator-Insight/tree/youtube-ip-v6) |
+| Deploy repo | `royayushkr/Youtube-IP-V6` |
 | Deploy branch | `main` |
-| PR branch reference | [youtube-ip-v5](https://github.com/matt-foor/purdue-youtube-ip/tree/youtube-ip-v5) |
-| Live V5 app | [youtube-ip-v5.streamlit.app](https://youtube-ip-v5.streamlit.app/) |
+| Live V6 app | [youtube-ip-v6.streamlit.app](https://youtube-ip-v6.streamlit.app/) |
+| Historical V5 deploy repo | `royayushkr/Youtube-IP-V5` |
 
 ## All Deployed Versions
 
@@ -23,33 +22,35 @@ For the current section-by-section runtime behavior, see [Architecture](ARCHITEC
 | `V2` | [youtube-stats-ip-v2.streamlit.app](https://youtube-stats-ip-v2.streamlit.app/) | expansion | larger creator operating system with more AI and workflow surface |
 | `V3` | [youtube-ip-v3.streamlit.app](https://youtube-ip-v3.streamlit.app/) | productization | clearer multi-page app with a stronger runtime story |
 | `V4` | [youtube-ip-v4.streamlit.app](https://youtube-ip-v4.streamlit.app/) | deep intelligence | most ambitious version with Assistant, Google OAuth, and BERTopic beta |
-| `V5` | [youtube-ip-v5.streamlit.app](https://youtube-ip-v5.streamlit.app/) | simplification + presentation | current public-only streamlined shell with retained AI suite pages |
+| `V5` | [youtube-ip-v5.streamlit.app](https://youtube-ip-v5.streamlit.app/) | simplification + presentation | public-only streamlined shell with retained AI suite pages and a separate `Thumbnails` page |
+| `V6` | [youtube-ip-v6.streamlit.app](https://youtube-ip-v6.streamlit.app/) | consolidation + production polish | light shell, `Media Lab`, single-video workflows, Streamlit-native routing, cleaner deployment posture |
 
 ## Version Evolution Flow
 
 ```mermaid
 flowchart LR
-    V1["V1"] --> V2["V2"] --> V3["V3"] --> V4["V4"] --> V5["V5"]
+    V1["V1"] --> V2["V2"] --> V3["V3"] --> V4["V4"] --> V5["V5"] --> V6["V6"]
     V1 --- A1["analytics prototype"]
     V2 --- A2["creator-suite expansion"]
     V3 --- A3["clear product shell"]
     V4 --- A4["Assistant + OAuth + Channel Insights + BERTopic beta"]
     V5 --- A5["public-only cleanup + consolidated documentation"]
+    V6 --- A6["Media Lab + light shell + deploy polish"]
 ```
 
 ## Version Comparison Matrix
 
-| Area | V1 | V2 | V3 | V4 | V5 |
-| --- | --- | --- | --- | --- | --- |
-| Public dataset benchmarking | present | present | present | present | present |
-| Live public-channel workspace | limited | expanded | present | present | present |
-| Outlier research | early | present | strong standalone page | strong | strong |
-| Thumbnail generation | present | expanded | present | present | present |
-| Dedicated `Channel Insights` page | absent | absent | absent | present | present |
-| Sidebar `Assistant` | absent | absent | absent | present | removed |
-| Google OAuth / owner analytics | absent | absent | absent | present | removed |
-| Optional BERTopic runtime in app | conceptual | conceptual | stack framing only | present | present |
-| Current page 3 label | dataset/thumbnails mix | recommendations style | `Recommendations` | `Recommendations` | `Thumbnails` |
+| Area | V1 | V2 | V3 | V4 | V5 | V6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Public dataset benchmarking | present | present | present | present | present | present |
+| Live public-channel workspace | limited | expanded | present | present | present | present |
+| Outlier research | early | present | strong standalone page | strong | strong | strong |
+| Thumbnail generation | present | expanded | present | present | present | present inside `Media Lab` |
+| Dedicated `Channel Insights` page | absent | absent | absent | present | present | present |
+| Sidebar `Assistant` | absent | absent | absent | present | removed | removed |
+| Google OAuth / owner analytics | absent | absent | absent | present | removed | removed |
+| Optional BERTopic runtime in app | conceptual | conceptual | stack framing only | present | present | present |
+| Current page 3 label | dataset/thumbnails mix | recommendations style | `Recommendations` | `Recommendations` | `Thumbnails` | `Media Lab` |
 
 ## Documented Navigation By Version
 
@@ -60,6 +61,7 @@ flowchart LR
 | `V3` | `Channel Analysis`, `Recommendations`, `Ytuber`, `Outlier Finder`, `Deployment` |
 | `V4` | `Channel Analysis`, `Channel Insights`, `Recommendations`, `Outlier Finder`, `Ytuber`, `Tools`, `Deployment`, plus sidebar `Assistant` |
 | `V5` | `Channel Analysis`, `Channel Insights`, `Thumbnails`, `Outlier Finder`, `Ytuber`, `Tools`, `Deployment` |
+| `V6` | `Channel Analysis`, `Channel Insights`, `Media Lab`, `Outlier Finder`, `Ytuber`, `Deployment` |
 
 ## Deployment Summary By Version
 
@@ -70,6 +72,7 @@ flowchart LR
 | `V3` | make the app structure understandable | medium | prepared the ground for deeper intelligence features |
 | `V4` | add tracked-channel depth and owner overlays | high | richest feature set, but also the heaviest deployment and secrets burden |
 | `V5` | keep high-value workflows while reducing deploy risk | medium | removed Assistant and OAuth, kept the AI suite and BERTopic beta optional |
+| `V6` | keep the public-only analysis core while simplifying creator media tooling | medium | merges `Thumbnails` and `Tools` into `Media Lab`, removes active batch/playlist UI, and improves deploy clarity |
 
 ## Secrets And Config Evolution
 
@@ -80,12 +83,13 @@ flowchart LR
 | `V3` | pooled or single-key `YOUTUBE`, `GEMINI`, `OPENAI` formats | stronger key rotation and Streamlit deploy support |
 | `V4` | V3 keys plus `GOOGLE_OAUTH_*` and `MODEL_ARTIFACTS_*` | owner analytics overlays and optional BERTopic beta runtime |
 | `V5` | pooled or single-key `YOUTUBE`, `GEMINI`, `OPENAI`, plus `MODEL_ARTIFACTS_*` | public-only runtime with optional BERTopic beta, no OAuth path |
+| `V6` | same V5 key families on a new deploy repo, plus the same optional `MODEL_ARTIFACTS_*` path | public-only analysis core, AI-assisted media workflows, and optional BERTopic beta |
 
-## Current V5 Deployment Flow
+## Current V6 Deployment Flow
 
 ```mermaid
 flowchart TD
-    A["GitHub repo branch<br/>youtube-ip-v5"] --> B["Streamlit app configuration"]
+    A["Source repo branch<br/>youtube-ip-v6"] --> B["Deploy repo main"]
     B --> C["streamlit_app.py"]
     C --> D["dashboard/app.py"]
     D --> E["Sidebar navigation"]
@@ -95,12 +99,13 @@ flowchart TD
     F --> I["Charts, tables, cards, prompts, downloads"]
 ```
 
-The current V5 app surface behind that deployment is:
+The current V6 app surface behind that deployment is:
 
-- `7` sidebar pages
+- `6` sidebar pages
 - `2` primary runtime data paths
 - `3` provider families
 - `2` Channel Insights topic modes
+- `1` consolidated `Media Lab` workflow instead of separate `Thumbnails` + `Tools`
 
 Deeper page-by-page behavior lives in [Architecture](ARCHITECTURE.md).
 
@@ -119,7 +124,7 @@ flowchart LR
     G --> H["Rendered Streamlit UI"]
 ```
 
-In V5, `Channel Insights` is public-only. It does not use Google OAuth and does not merge owner-only YouTube Analytics metrics.
+In V6, `Channel Insights` is still public-only. It does not use Google OAuth and does not merge owner-only YouTube Analytics metrics.
 
 ## Model-Backed Topic Deployment
 
@@ -170,7 +175,7 @@ flowchart LR
     D --> K["fallback to heuristics if artifact is missing or invalid"]
 ```
 
-## Recommended Current V5 Streamlit Secrets
+## Recommended Current V6 Streamlit Secrets
 
 ```toml
 YOUTUBE_API_KEYS = ["your_youtube_key_1", "your_youtube_key_2"]
@@ -178,7 +183,7 @@ GEMINI_API_KEYS = ["your_gemini_key_1", "your_gemini_key_2"]
 OPENAI_API_KEYS = ["your_openai_key_1", "your_openai_key_2"]
 
 MODEL_ARTIFACTS_ENABLED = true
-MODEL_ARTIFACTS_MANIFEST_URL = "https://raw.githubusercontent.com/royayushkr/Youtube-IP-V5/main/data/model_manifests/bertopic_manifest_2026.03.27.json"
+MODEL_ARTIFACTS_MANIFEST_URL = "https://raw.githubusercontent.com/royayushkr/Youtube-IP-V6/main/data/model_manifests/bertopic_manifest_2026.03.27.json"
 MODEL_ARTIFACTS_CACHE_DIR = "outputs/models/runtime"
 MODEL_ARTIFACTS_DOWNLOAD_TIMEOUT_SECONDS = 300
 MODEL_ARTIFACTS_MAX_SIZE_MB = 512
@@ -190,12 +195,12 @@ If you want a GCP-oriented environment template instead of Streamlit secrets, us
 
 That file is a placeholder template only. On GCP, inject those values as real environment variables or Secret Manager-backed service variables rather than shipping a real `.env` file in the repo.
 
-## What V5 Keeps And What It Leaves Behind
+## What V6 Keeps And What It Leaves Behind
 
-| Category | Kept In V5 | Left In Earlier Versions |
+| Category | Kept In V6 | Left In Earlier Versions |
 | --- | --- | --- |
 | Benchmarking | dataset analytics, charts, rankings | none; this remains a through-line |
-| Creator workspace | `Ytuber`, `Tools`, `Deployment`, `Thumbnails` | Assistant |
+| Creator workspace | `Ytuber`, `Media Lab`, `Deployment` | sidebar `Assistant`, separate `Thumbnails`, separate `Tools`, active batch/playlist UI |
 | Channel intelligence | public tracked-channel snapshots | owner-only OAuth branch |
 | Modeling | heuristic topics and optional BERTopic beta | none removed here, only guarded more tightly |
-| Deployment posture | Streamlit-first | heavier V4 auth and assistant overhead |
+| Deployment posture | Streamlit-first with cleaner V6 source->deploy mapping | heavier V4 auth overhead and separate V5 media pages |

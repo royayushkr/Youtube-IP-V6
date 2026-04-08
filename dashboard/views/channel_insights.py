@@ -53,9 +53,9 @@ def _inject_channel_insights_css() -> None:
             gap: 0.5rem;
             padding: 0.45rem 0.78rem;
             border-radius: 999px;
-            background: rgba(255, 0, 0, 0.12);
-            border: 1px solid rgba(255, 0, 0, 0.35);
-            color: #FF8888;
+            background: rgba(255, 0, 51, 0.08);
+            border: 1px solid rgba(255, 0, 51, 0.16);
+            color: #C62828;
             font-size: 12px;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -65,20 +65,20 @@ def _inject_channel_insights_css() -> None:
             width: 8px;
             height: 8px;
             border-radius: 999px;
-            background: #FF0000;
-            box-shadow: 0 0 14px rgba(255, 0, 0, 0.5);
+            background: linear-gradient(180deg, #FF0033 0%, #D92D20 100%);
+            box-shadow: 0 0 14px rgba(255, 0, 51, 0.22);
         }
         .ci-title {
             font-family: "Inter", system-ui, sans-serif;
             font-size: clamp(34px, 3.8vw, 50px);
             line-height: 1.02;
             font-weight: 800;
-            color: #FFFFFF;
+            color: #101828;
             letter-spacing: -0.04em;
             margin-bottom: 0.8rem;
         }
         .ci-subtitle {
-            color: #B0B0B0;
+            color: #667085;
             font-size: 16px;
             line-height: 1.62;
             max-width: 760px;
@@ -87,24 +87,21 @@ def _inject_channel_insights_css() -> None:
         }
         .ci-card {
             border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background:
-                radial-gradient(circle at top left, rgba(255, 0, 0, 0.10) 0%, transparent 30%),
-                radial-gradient(circle at top right, rgba(0, 212, 255, 0.08) 0%, transparent 26%),
-                linear-gradient(180deg, rgba(22, 33, 62, 0.95) 0%, rgba(15, 15, 35, 0.98) 100%);
-            box-shadow: 0 20px 46px rgba(3, 6, 20, 0.40);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
             padding: 1.2rem 1.25rem;
             margin-bottom: 1rem;
         }
         .ci-card-title {
             font-family: "Inter", system-ui, sans-serif;
-            color: #F7F8FC;
+            color: #101828;
             font-size: 20px;
             font-weight: 700;
             margin-bottom: 0.3rem;
         }
         .ci-card-copy {
-            color: #B8C1DA;
+            color: #667085;
             font-size: 13px;
             line-height: 1.55;
         }
@@ -117,18 +114,18 @@ def _inject_channel_insights_css() -> None:
         .ci-summary-item {
             padding: 0.75rem 0.85rem;
             border-radius: 18px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF7F8 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
         }
         .ci-summary-label {
-            color: #8993B2;
+            color: #667085;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             margin-bottom: 0.22rem;
         }
         .ci-summary-value {
-            color: #F7F8FC;
+            color: #101828;
             font-size: 14px;
             font-weight: 700;
             line-height: 1.5;
@@ -136,7 +133,7 @@ def _inject_channel_insights_css() -> None:
         .ci-list {
             margin: 0;
             padding-left: 1rem;
-            color: #D7DDF0;
+            color: #475467;
             font-size: 13px;
             line-height: 1.6;
         }
@@ -146,18 +143,18 @@ def _inject_channel_insights_css() -> None:
         .ci-theme-card {
             padding: 0.85rem 0.95rem;
             border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
             margin-bottom: 0.8rem;
         }
         .ci-theme-title {
-            color: #F7F8FC;
+            color: #101828;
             font-size: 16px;
             font-weight: 700;
             margin-bottom: 0.25rem;
         }
         .ci-theme-copy {
-            color: #B8C1DA;
+            color: #667085;
             font-size: 13px;
             line-height: 1.6;
         }
@@ -167,24 +164,24 @@ def _inject_channel_insights_css() -> None:
             gap: 0.4rem;
             padding: 0.28rem 0.65rem;
             border-radius: 999px;
-            background: rgba(139, 92, 246, 0.14);
-            border: 1px solid rgba(196, 181, 253, 0.16);
-            color: #F7F8FC;
+            background: rgba(255, 0, 51, 0.08);
+            border: 1px solid rgba(255, 0, 51, 0.12);
+            color: #B42318;
             font-size: 11px;
             letter-spacing: 0.05em;
             text-transform: uppercase;
         }
         .ci-note {
-            color: #97A2C3;
+            color: #667085;
             font-size: 12px;
             line-height: 1.55;
         }
         .ci-empty {
             padding: 1rem 1.1rem;
             border-radius: 20px;
-            border: 1px dashed rgba(255,255,255,0.12);
-            background: rgba(255,255,255,0.02);
-            color: #B8C1DA;
+            border: 1px dashed rgba(15, 23, 42, 0.14);
+            background: rgba(255,255,255,0.92);
+            color: #667085;
             font-size: 13px;
             line-height: 1.6;
         }
@@ -346,7 +343,7 @@ def _render_connect_card(connected_channels: list[dict[str, Any]]) -> None:
                         <div class="ci-summary-value">Heuristic</div>
                     </div>
                 </div>
-                <div class="ci-note" style="margin-top:0.85rem;">Channel Insights stays public-only in this lighter V5 build. It still supports snapshot history, topic trends, outliers, and next-topic recommendations.</div>
+                <div class="ci-note" style="margin-top:0.85rem;">Channel Insights stays public-only in this lighter V6 build. It still supports snapshot history, topic trends, outliers, and next-topic recommendations.</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -676,7 +673,7 @@ def _render_theme_cards(title: str, rows: Iterable[Dict[str, Any]], channel_titl
             <div class="ci-theme-card">
                 <div class="ci-theme-title">{escape(str(item.get('theme', 'Theme')))}</div>
                 <div class="ci-theme-copy">{escape(str(item.get('rationale', '')))}</div>
-                <div class="ci-theme-copy" style="margin-top:0.35rem;color:#F7F8FC;">{escape(str(item.get('action', '')))}</div>
+                <div class="ci-theme-copy" style="margin-top:0.35rem;color:#101828;">{escape(str(item.get('action', '')))}</div>
             </div>
             """,
             unsafe_allow_html=True,

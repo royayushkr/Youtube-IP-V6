@@ -96,13 +96,15 @@ def prepare_transcript_download(
     prefer_generated: bool | None = None,
     prefer_any: bool = False,
     video_title: str | None = None,
+    transcript_text: str | None = None,
 ) -> PreparedArtifact:
-    transcript_text = fetch_transcript_text(
-        video_id,
-        language_code,
-        prefer_generated=prefer_generated,
-        prefer_any=prefer_any,
-    )
+    if transcript_text is None:
+        transcript_text = fetch_transcript_text(
+            video_id,
+            language_code,
+            prefer_generated=prefer_generated,
+            prefer_any=prefer_any,
+        )
     temp_dir = safe_temp_dir("yt-tools-transcript-")
     base_name = sanitize_filename(video_title or video_id, video_id)
     suffix = language_code or "transcript"

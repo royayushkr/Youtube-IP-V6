@@ -1,45 +1,35 @@
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, Literal, Optional
-from urllib.parse import parse_qs, urlparse
+from typing import Any, Literal
 
-import requests
 import streamlit as st
 import yt_dlp
 
+from src.services.media_error_service import map_media_error
+from src.services.thumbnail_hub_service import resolve_video_target
 from src.utils.file_utils import guess_mime_type, safe_temp_dir, sanitize_filename
 
 
-TargetType = Literal["video", "short", "playlist"]
-ArtifactType = Literal["thumbnail", "transcript", "audio", "video"]
-BatchOperation = Literal["metadata", "thumbnail", "transcript", "audio", "video"]
+TargetType = Literal["video", "short"]
 AudioProfile = Literal["best_audio_original", "mp3_conversion"]
 VideoProfile = Literal["best_available", "up_to_1080p", "up_to_720p", "up_to_480p"]
+ProgressCallback = Callable[[dict[str, Any]], None]
 
-YOUTUBE_HOSTS = {
-    "youtube.com",
-    "www.youtube.com",
-    "m.youtube.com",
-    "music.youtube.com",
-    "youtu.be",
-    "www.youtu.be",
-}
-PLAYLIST_PREVIEW_LIMIT_DEFAULT = 25
 STREAMLIT_DOWNLOAD_LIMIT_BYTES = 100 * 1024 * 1024
 _CACHE_TTL_SECONDS = 60 * 60
 
 
 @dataclass(frozen=True)
 class ResolvedYoutubeTarget:
-    input_url: str
+    input_value: str
     canonical_url: str
     target_type: TargetType
-    video_id: str | None = None
-    playlist_id: str | None = None
+    video_id: str
 
 
 @dataclass(frozen=True)
@@ -56,12 +46,6 @@ class VideoMetadata:
     thumbnail_variants: dict[str, str] = field(default_factory=dict)
     transcript_available: bool | None = None
     transcript_languages: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True)
-class PlaylistPreview:
-    title: str
-    entries: tuple[VideoMetadata, ...]
 
 
 @dataclass(frozen=True)
@@ -86,16 +70,7 @@ class PreparedArtifact:
     mime_type: str
     size_bytes: int
     source_item_id: str
-    artifact_type: ArtifactType
-
-
-@dataclass(frozen=True)
-class BatchItemResult:
-    source_url: str
-    status: Literal["ready", "error"]
-    message: str
-    metadata: VideoMetadata | None = None
-    artifacts: tuple[PreparedArtifact, ...] = ()
+    artifact_type: Literal["audio", "video"]
 
 
 class _SilentYTDLPLogger:
@@ -107,6 +82,24 @@ class _SilentYTDLPLogger:
 
     def error(self, msg: str) -> None:  # pragma: no cover - deliberately silent
         return
+
+
+def _emit_progress(
+    progress_callback: ProgressCallback | None,
+    *,
+    stage: str,
+    percent: float,
+    detail: str,
+) -> None:
+    if progress_callback is None:
+        return
+    progress_callback(
+        {
+            "stage": stage,
+            "percent": max(0.0, min(1.0, percent)),
+            "detail": detail,
+        }
+    )
 
 
 def _seconds_to_label(seconds: int | None) -> str:
@@ -128,86 +121,18 @@ def _format_upload_date(upload_date: str | None) -> str | None:
         return upload_date
 
 
-def _clean_host(host: str) -> str:
-    return host.lower().split(":", 1)[0]
+def _target_type_from_input(value: str) -> TargetType:
+    return "short" if "/shorts/" in str(value or "").lower() else "video"
 
 
-def _normalize_input_url(url: str) -> str:
-    stripped = (url or "").strip()
-    if not stripped:
-        raise ValueError("Enter a YouTube URL to continue.")
-    if "://" not in stripped:
-        stripped = f"https://{stripped}"
-    return stripped
-
-
-def _canonical_video_url(video_id: str) -> str:
-    return f"https://www.youtube.com/watch?v={video_id}"
-
-
-def _canonical_short_url(video_id: str) -> str:
-    return f"https://www.youtube.com/shorts/{video_id}"
-
-
-def _canonical_playlist_url(playlist_id: str) -> str:
-    return f"https://www.youtube.com/playlist?list={playlist_id}"
-
-
-def validate_youtube_url(url: str) -> ResolvedYoutubeTarget:
-    normalized = _normalize_input_url(url)
-    parsed = urlparse(normalized)
-    host = _clean_host(parsed.netloc)
-    if host not in YOUTUBE_HOSTS:
-        raise ValueError("Use a public YouTube video, Short, or playlist URL.")
-
-    query = parse_qs(parsed.query)
-    path_parts = [part for part in parsed.path.split("/") if part]
-
-    if host.endswith("youtu.be"):
-        video_id = path_parts[0] if path_parts else ""
-        if not video_id:
-            raise ValueError("This shortened YouTube URL is missing a video ID.")
-        return ResolvedYoutubeTarget(
-            input_url=url,
-            canonical_url=_canonical_video_url(video_id),
-            target_type="video",
-            video_id=video_id,
-        )
-
-    if path_parts[:1] == ["shorts"] and len(path_parts) >= 2:
-        video_id = path_parts[1]
-        return ResolvedYoutubeTarget(
-            input_url=url,
-            canonical_url=_canonical_short_url(video_id),
-            target_type="short",
-            video_id=video_id,
-        )
-
-    if path_parts[:1] == ["playlist"] or ("list" in query and "v" not in query):
-        playlist_id = query.get("list", [""])[0]
-        if not playlist_id:
-            raise ValueError("This playlist URL is missing a playlist ID.")
-        return ResolvedYoutubeTarget(
-            input_url=url,
-            canonical_url=_canonical_playlist_url(playlist_id),
-            target_type="playlist",
-            playlist_id=playlist_id,
-        )
-
-    if path_parts[:1] in (["watch"], ["embed"], ["live"]):
-        video_id = query.get("v", [None])[0]
-        if not video_id and len(path_parts) >= 2 and path_parts[0] in {"embed", "live"}:
-            video_id = path_parts[1]
-        if video_id:
-            return ResolvedYoutubeTarget(
-                input_url=url,
-                canonical_url=_canonical_video_url(video_id),
-                target_type="video",
-                video_id=video_id,
-                playlist_id=query.get("list", [None])[0],
-            )
-
-    raise ValueError("Use a standard YouTube watch URL, Short URL, or playlist URL.")
+def validate_youtube_url(value: str) -> ResolvedYoutubeTarget:
+    video_id, canonical_url = resolve_video_target(value)
+    return ResolvedYoutubeTarget(
+        input_value=value,
+        canonical_url=canonical_url,
+        target_type=_target_type_from_input(value),
+        video_id=video_id,
+    )
 
 
 def _yt_dlp_base_options() -> dict[str, Any]:
@@ -217,30 +142,13 @@ def _yt_dlp_base_options() -> dict[str, Any]:
         "noprogress": True,
         "logger": _SilentYTDLPLogger(),
         "skip_download": True,
+        "noplaylist": True,
     }
 
 
 @st.cache_data(ttl=_CACHE_TTL_SECONDS, show_spinner=False)
 def _cached_video_info(url: str) -> dict[str, Any]:
-    with yt_dlp.YoutubeDL(
-        {
-            **_yt_dlp_base_options(),
-            "noplaylist": True,
-        }
-    ) as ydl:
-        return ydl.extract_info(url, download=False)
-
-
-@st.cache_data(ttl=_CACHE_TTL_SECONDS, show_spinner=False)
-def _cached_playlist_info(url: str, max_items: int) -> dict[str, Any]:
-    with yt_dlp.YoutubeDL(
-        {
-            **_yt_dlp_base_options(),
-            "extract_flat": "in_playlist",
-            "playlistend": max_items,
-            "noplaylist": False,
-        }
-    ) as ydl:
+    with yt_dlp.YoutubeDL(_yt_dlp_base_options()) as ydl:
         return ydl.extract_info(url, download=False)
 
 
@@ -256,21 +164,24 @@ def _thumbnail_variants_from_info(info: dict[str, Any]) -> dict[str, str]:
     fallback = info.get("thumbnail")
     if fallback:
         collected.append((0, fallback))
+
     unique_urls: list[str] = []
     for _, url in sorted(collected, key=lambda item: item[0], reverse=True):
         if url not in unique_urls:
             unique_urls.append(url)
+
     labels = ["Best Available", "High", "Medium", "Low"]
-    variants: dict[str, str] = {}
-    for index, url in enumerate(unique_urls[:4]):
-        label = labels[index] if index < len(labels) else f"Option {index + 1}"
-        variants[label] = url
-    return variants
+    return {
+        labels[index] if index < len(labels) else f"Option {index + 1}": url
+        for index, url in enumerate(unique_urls[:4])
+    }
 
 
 def _build_video_metadata(info: dict[str, Any], *, target_type: TargetType | None = None) -> VideoMetadata:
     inferred_type = target_type or ("short" if "/shorts/" in (info.get("webpage_url") or "") else "video")
-    transcript_languages = tuple(sorted(set((info.get("subtitles") or {}).keys()) | set((info.get("automatic_captions") or {}).keys())))
+    transcript_languages = tuple(
+        sorted(set((info.get("subtitles") or {}).keys()) | set((info.get("automatic_captions") or {}).keys()))
+    )
     variants = _thumbnail_variants_from_info(info)
     thumbnail_url = variants.get("Best Available") or info.get("thumbnail")
     return VideoMetadata(
@@ -281,7 +192,7 @@ def _build_video_metadata(info: dict[str, Any], *, target_type: TargetType | Non
         publish_date=_format_upload_date(info.get("upload_date")),
         video_id=info.get("id") or "",
         content_type="Short" if inferred_type == "short" else "Video",
-        webpage_url=info.get("webpage_url") or _canonical_video_url(info.get("id") or ""),
+        webpage_url=info.get("webpage_url") or validate_youtube_url(info.get("id") or "").canonical_url,
         thumbnail_url=thumbnail_url,
         thumbnail_variants=variants,
         transcript_available=bool(transcript_languages),
@@ -321,7 +232,7 @@ def _video_label(format_info: dict[str, Any], *, merged: bool) -> str:
     resolution = f"{height}p" if height else "Video"
     fps_label = f"{fps:.0f} fps" if fps else "Unknown fps"
     size_label = _format_size_label(_filesize_estimate(format_info))
-    suffix = " • Merged With Best Audio" if merged else ""
+    suffix = " • MP4" if merged else ""
     return f"{resolution} • {ext} • {fps_label} • {size_label}{suffix}"
 
 
@@ -329,57 +240,21 @@ def ffmpeg_available() -> bool:
     return shutil.which("ffmpeg") is not None
 
 
-def fetch_video_metadata(url: str) -> VideoMetadata:
-    target = validate_youtube_url(url)
-    if target.target_type == "playlist":
-        raise ValueError("Use Playlist mode for playlist URLs.")
-    return _build_video_metadata(_cached_video_info(target.canonical_url), target_type=target.target_type)
+def fetch_video_metadata(value: str) -> VideoMetadata:
+    target = validate_youtube_url(value)
+    try:
+        return _build_video_metadata(_cached_video_info(target.canonical_url), target_type=target.target_type)
+    except Exception as exc:  # pragma: no cover - exercised through callers/tests
+        raise RuntimeError(map_media_error(exc).technical_detail) from exc
 
 
-def fetch_playlist_preview(url: str, *, max_items: int = PLAYLIST_PREVIEW_LIMIT_DEFAULT) -> PlaylistPreview:
-    target = validate_youtube_url(url)
-    if target.target_type != "playlist":
-        raise ValueError("Use a playlist URL in Playlist mode.")
-    info = _cached_playlist_info(target.canonical_url, max_items)
-    entries: list[VideoMetadata] = []
-    for entry in info.get("entries") or []:
-        if not entry:
-            continue
-        video_id = entry.get("id") or ""
-        thumb = entry.get("thumbnail")
-        raw_entry_url = entry.get("url") or ""
-        entry_url = raw_entry_url if str(raw_entry_url).startswith("http") else _canonical_video_url(video_id)
-        entries.append(
-            VideoMetadata(
-                title=entry.get("title") or "Untitled Video",
-                channel=entry.get("channel") or entry.get("uploader") or "Unknown Channel",
-                duration_seconds=entry.get("duration"),
-                duration_label=_seconds_to_label(entry.get("duration")),
-                publish_date=None,
-                video_id=video_id,
-                content_type="Short" if "/shorts/" in entry_url else "Video",
-                webpage_url=entry_url,
-                thumbnail_url=thumb,
-                thumbnail_variants={"Best Available": thumb} if thumb else {},
-                transcript_available=None,
-                transcript_languages=(),
-            )
-        )
-    return PlaylistPreview(
-        title=info.get("title") or "Untitled Playlist",
-        entries=tuple(entries),
-    )
+def get_available_formats(value: str) -> dict[str, list[FormatOption]]:
+    target = validate_youtube_url(value)
+    try:
+        info = _cached_video_info(target.canonical_url)
+    except Exception as exc:  # pragma: no cover - exercised through callers/tests
+        raise RuntimeError(map_media_error(exc).technical_detail) from exc
 
-
-def fetch_playlist_entries(url: str, *, max_items: int = PLAYLIST_PREVIEW_LIMIT_DEFAULT) -> list[VideoMetadata]:
-    return list(fetch_playlist_preview(url, max_items=max_items).entries)
-
-
-def get_available_formats(url: str) -> dict[str, list[FormatOption]]:
-    target = validate_youtube_url(url)
-    if target.target_type == "playlist":
-        raise ValueError("Formats are only available for single videos and Shorts.")
-    info = _cached_video_info(target.canonical_url)
     audio_options: list[FormatOption] = []
     video_options: list[FormatOption] = []
     ffmpeg_ready = ffmpeg_available()
@@ -430,6 +305,7 @@ def get_available_formats(url: str) -> dict[str, list[FormatOption]]:
         if selector in seen_video_selectors:
             continue
         seen_video_selectors.add(selector)
+
         height = format_info.get("height")
         resolution = f"{height}p" if height else "Video"
         video_options.append(
@@ -472,9 +348,9 @@ def _audio_profile_selector(profile: str) -> tuple[str, list[dict[str, Any]] | N
 def _video_profile_selector(profile: str) -> str:
     selectors = {
         "best_available": "bestvideo*+bestaudio/best",
-        "up_to_1080p": "bestvideo*[height<=1080]+bestaudio/best[height<=1080]",
-        "up_to_720p": "bestvideo*[height<=720]+bestaudio/best[height<=720]",
-        "up_to_480p": "bestvideo*[height<=480]+bestaudio/best[height<=480]",
+        "up_to_1080p": "bestvideo*[height<=1080]+bestaudio/best",
+        "up_to_720p": "bestvideo*[height<=720]+bestaudio/best",
+        "up_to_480p": "bestvideo*[height<=480]+bestaudio/best",
     }
     return selectors.get(profile, profile)
 
@@ -491,34 +367,69 @@ def _locate_downloaded_file(temp_dir: Path) -> Path:
     return max(candidates, key=lambda path: path.stat().st_mtime)
 
 
+def _build_ytdlp_progress_hook(progress_callback: ProgressCallback | None) -> Callable[[dict[str, Any]], None]:
+    def _hook(data: dict[str, Any]) -> None:
+        status = data.get("status")
+        if status == "downloading":
+            total = data.get("total_bytes") or data.get("total_bytes_estimate") or 0
+            downloaded = data.get("downloaded_bytes") or 0
+            percent = (downloaded / total) if total else 0.35
+            speed = data.get("speed")
+            speed_label = f" at {speed / (1024 * 1024):.1f} MB/s" if speed else ""
+            _emit_progress(
+                progress_callback,
+                stage="downloading",
+                percent=min(0.94, percent),
+                detail=f"Downloading {downloaded / (1024 * 1024):.1f} MB{speed_label}",
+            )
+        elif status == "finished":
+            _emit_progress(
+                progress_callback,
+                stage="finalizing",
+                percent=0.97,
+                detail="Download finished. Finalizing the file...",
+            )
+
+    return _hook
+
+
 def _download_with_ytdlp(
-    url: str,
+    value: str,
     *,
     format_selector: str,
-    artifact_type: ArtifactType,
+    artifact_type: Literal["audio", "video"],
     file_stem: str,
+    progress_callback: ProgressCallback | None = None,
     postprocessors: list[dict[str, Any]] | None = None,
     merge_output_format: str | None = None,
 ) -> PreparedArtifact:
-    metadata = fetch_video_metadata(url)
+    metadata = fetch_video_metadata(value)
+    target = validate_youtube_url(value)
     temp_dir = safe_temp_dir(f"yt-tools-{artifact_type}-")
     output_template = str(temp_dir / f"{sanitize_filename(file_stem, metadata.video_id)}.%(ext)s")
+    _emit_progress(progress_callback, stage="validating", percent=0.08, detail="Validating the public video target...")
+
     options: dict[str, Any] = {
         **_yt_dlp_base_options(),
         "skip_download": False,
-        "noplaylist": True,
         "format": format_selector,
         "outtmpl": {"default": output_template},
+        "progress_hooks": [_build_ytdlp_progress_hook(progress_callback)],
     }
     if postprocessors:
         options["postprocessors"] = postprocessors
     if merge_output_format:
         options["merge_output_format"] = merge_output_format
 
-    with yt_dlp.YoutubeDL(options) as ydl:
-        ydl.extract_info(validate_youtube_url(url).canonical_url, download=True)
+    try:
+        _emit_progress(progress_callback, stage="preparing", percent=0.14, detail="Preparing the yt-dlp download job...")
+        with yt_dlp.YoutubeDL(options) as ydl:
+            ydl.extract_info(target.canonical_url, download=True)
+        file_path = _locate_downloaded_file(temp_dir)
+        _emit_progress(progress_callback, stage="ready", percent=1.0, detail="File is ready to download.")
+    except Exception as exc:
+        raise RuntimeError(map_media_error(exc).technical_detail) from exc
 
-    file_path = _locate_downloaded_file(temp_dir)
     return PreparedArtifact(
         file_path=str(file_path),
         file_name=file_path.name,
@@ -529,121 +440,55 @@ def _download_with_ytdlp(
     )
 
 
-def prepare_thumbnail_download(url: str, quality_key: str | None = None) -> PreparedArtifact:
-    metadata = fetch_video_metadata(url)
-    variants = metadata.thumbnail_variants or {}
-    thumbnail_url = variants.get(quality_key or "", metadata.thumbnail_url) if quality_key else metadata.thumbnail_url
-    if not thumbnail_url:
-        raise ValueError("No thumbnail is available for this video.")
-
-    response = requests.get(thumbnail_url, timeout=30)
-    response.raise_for_status()
-    suffix = Path(urlparse(thumbnail_url).path).suffix or ".jpg"
-    temp_dir = safe_temp_dir("yt-tools-thumbnail-")
-    filename = f"{sanitize_filename(metadata.title, metadata.video_id)}-thumbnail{suffix}"
-    file_path = temp_dir / filename
-    file_path.write_bytes(response.content)
-    return PreparedArtifact(
-        file_path=str(file_path),
-        file_name=filename,
-        mime_type=response.headers.get("content-type") or guess_mime_type(file_path),
-        size_bytes=file_path.stat().st_size,
-        source_item_id=metadata.video_id,
-        artifact_type="thumbnail",
-    )
-
-
-def prepare_audio_download(url: str, profile: str) -> PreparedArtifact:
-    metadata = fetch_video_metadata(url)
+def prepare_audio_download(
+    value: str,
+    profile: str = "mp3_conversion",
+    *,
+    progress_callback: ProgressCallback | None = None,
+) -> PreparedArtifact:
+    metadata = fetch_video_metadata(value)
     selector, postprocessors = _audio_profile_selector(profile)
     return _download_with_ytdlp(
-        url,
+        value,
         format_selector=selector,
         artifact_type="audio",
         file_stem=f"{metadata.title}-audio",
         postprocessors=postprocessors,
+        progress_callback=progress_callback,
     )
 
 
-def prepare_video_download(url: str, profile_or_format: str) -> PreparedArtifact:
-    metadata = fetch_video_metadata(url)
+def prepare_video_download(
+    value: str,
+    profile_or_format: str = "up_to_1080p",
+    *,
+    progress_callback: ProgressCallback | None = None,
+) -> PreparedArtifact:
+    metadata = fetch_video_metadata(value)
     selector = _video_profile_selector(profile_or_format)
     merge_output_format = "mp4" if "+" in selector else None
     if "+" in selector and not ffmpeg_available():
         raise ValueError("FFmpeg is required for merged video downloads.")
     return _download_with_ytdlp(
-        url,
+        value,
         format_selector=selector,
         artifact_type="video",
         file_stem=metadata.title,
         merge_output_format=merge_output_format,
+        progress_callback=progress_callback,
     )
 
 
-def prepare_batch_operation(
-    urls: list[str],
-    operation: BatchOperation,
-    options: dict[str, Any] | None = None,
-) -> list[BatchItemResult]:
-    from src.services.transcript_service import prepare_transcript_download
-
-    options = options or {}
-    results: list[BatchItemResult] = []
-    for raw_url in urls:
-        try:
-            target = validate_youtube_url(raw_url)
-            if target.target_type == "playlist":
-                raise ValueError("Playlist URLs belong in Playlist mode.")
-            metadata = fetch_video_metadata(target.canonical_url)
-            artifacts: list[PreparedArtifact] = []
-            if operation == "thumbnail":
-                artifacts.append(prepare_thumbnail_download(target.canonical_url, options.get("thumbnail_quality")))
-            elif operation == "transcript":
-                artifacts.append(
-                    prepare_transcript_download(
-                        metadata.video_id,
-                        options.get("language_code"),
-                        prefer_any=bool(options.get("prefer_any")),
-                        video_title=metadata.title,
-                    )
-                )
-            elif operation == "audio":
-                artifacts.append(prepare_audio_download(target.canonical_url, options.get("audio_profile", "best_audio_original")))
-            elif operation == "video":
-                artifacts.append(prepare_video_download(target.canonical_url, options.get("video_profile", "best_available")))
-            results.append(
-                BatchItemResult(
-                    source_url=raw_url,
-                    status="ready",
-                    message="Ready",
-                    metadata=metadata,
-                    artifacts=tuple(artifacts),
-                )
-            )
-        except Exception as exc:
-            results.append(
-                BatchItemResult(
-                    source_url=raw_url,
-                    status="error",
-                    message=str(exc),
-                    metadata=None,
-                    artifacts=(),
-                )
-            )
-    return results
-
-
-def prepare_playlist_operation(
-    playlist_url: str,
-    selected_ids: list[str],
-    operation: BatchOperation,
-    options: dict[str, Any] | None = None,
-) -> list[BatchItemResult]:
-    preview = fetch_playlist_preview(playlist_url, max_items=int((options or {}).get("playlist_max_items", PLAYLIST_PREVIEW_LIMIT_DEFAULT)))
-    selected_set = set(selected_ids)
-    selected_urls = [
-        entry.webpage_url or _canonical_video_url(entry.video_id)
-        for entry in preview.entries
-        if entry.video_id in selected_set
-    ]
-    return prepare_batch_operation(selected_urls, operation, options=options)
+__all__ = [
+    "FormatOption",
+    "PreparedArtifact",
+    "ResolvedYoutubeTarget",
+    "STREAMLIT_DOWNLOAD_LIMIT_BYTES",
+    "VideoMetadata",
+    "ffmpeg_available",
+    "fetch_video_metadata",
+    "get_available_formats",
+    "prepare_audio_download",
+    "prepare_video_download",
+    "validate_youtube_url",
+]
