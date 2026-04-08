@@ -53,9 +53,9 @@ def _inject_channel_insights_css() -> None:
             gap: 0.5rem;
             padding: 0.45rem 0.78rem;
             border-radius: 999px;
-            background: rgba(255, 0, 51, 0.08);
-            border: 1px solid rgba(255, 0, 51, 0.16);
-            color: #C62828;
+            background: #F2F2F2;
+            border: 1px solid var(--yt-border);
+            color: #FF0000;
             font-size: 12px;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -65,8 +65,8 @@ def _inject_channel_insights_css() -> None:
             width: 8px;
             height: 8px;
             border-radius: 999px;
-            background: linear-gradient(180deg, #FF0033 0%, #D92D20 100%);
-            box-shadow: 0 0 14px rgba(255, 0, 51, 0.22);
+            background: #FF0000;
+            box-shadow: none;
         }
         .ci-title {
             font-family: "Inter", system-ui, sans-serif;
@@ -87,9 +87,9 @@ def _inject_channel_insights_css() -> None:
         }
         .ci-card {
             border-radius: 24px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
-            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+            border: 1px solid var(--yt-border);
+            background: #FFFFFF;
+            box-shadow: var(--yt-shadow);
             padding: 1.2rem 1.25rem;
             margin-bottom: 1rem;
         }
@@ -114,8 +114,8 @@ def _inject_channel_insights_css() -> None:
         .ci-summary-item {
             padding: 0.75rem 0.85rem;
             border-radius: 18px;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF7F8 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: #F9F9F9;
+            border: 1px solid var(--yt-border);
         }
         .ci-summary-label {
             color: #667085;
@@ -143,8 +143,8 @@ def _inject_channel_insights_css() -> None:
         .ci-theme-card {
             padding: 0.85rem 0.95rem;
             border-radius: 20px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+            border: 1px solid var(--yt-border);
+            background: #FFFFFF;
             margin-bottom: 0.8rem;
         }
         .ci-theme-title {
@@ -164,9 +164,9 @@ def _inject_channel_insights_css() -> None:
             gap: 0.4rem;
             padding: 0.28rem 0.65rem;
             border-radius: 999px;
-            background: rgba(255, 0, 51, 0.08);
-            border: 1px solid rgba(255, 0, 51, 0.12);
-            color: #B42318;
+            background: #F9F9F9;
+            border: 1px solid var(--yt-border);
+            color: #C62828;
             font-size: 11px;
             letter-spacing: 0.05em;
             text-transform: uppercase;

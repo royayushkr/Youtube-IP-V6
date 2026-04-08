@@ -8,20 +8,22 @@ APP_THEME_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --yt-red: #FF0033;
-    --yt-red-dark: #D92D20;
-    --yt-red-soft: #FFF3F5;
-    --yt-rose: #FF5A76;
-    --yt-surface: #FFFFFF;
-    --yt-surface-alt: #FFF8F8;
-    --yt-surface-muted: #F8FAFC;
-    --yt-border: rgba(15, 23, 42, 0.08);
-    --yt-border-strong: rgba(255, 0, 51, 0.16);
-    --yt-text: #101828;
-    --yt-text-muted: #667085;
-    --yt-text-soft: #98A2B3;
-    --yt-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
-    --yt-shadow-hover: 0 22px 52px rgba(15, 23, 42, 0.12);
+    --yt-red: #FF0000;
+    --yt-red-dark: #CC0000;
+    --yt-red-soft: #FEF2F2;
+    --yt-blue: #065FD4;
+    --yt-surface: #F9F9F9;
+    --yt-surface-alt: #F9F9F9;
+    --yt-surface-muted: #F2F2F2;
+    --yt-card: #FFFFFF;
+    --yt-border: #E5E5E5;
+    --yt-border-strong: rgba(255, 0, 0, 0.18);
+    --yt-text: #0F0F0F;
+    --yt-text-muted: #606060;
+    --yt-text-soft: #8A8A8A;
+    --yt-hover: #F2F2F2;
+    --yt-shadow: 0 1px 2px rgba(15, 15, 15, 0.06), 0 8px 20px rgba(15, 15, 15, 0.04);
+    --yt-shadow-hover: 0 2px 6px rgba(15, 15, 15, 0.08), 0 12px 24px rgba(15, 15, 15, 0.05);
     --app-radius-lg: 22px;
     --app-radius-md: 18px;
     --app-radius-pill: 999px;
@@ -29,13 +31,15 @@ APP_THEME_CSS = """
     --app-page-width: 1200px;
     --app-command-width: 1000px;
     --app-section-width: 1120px;
+    --app-header-offset: 4.5rem;
+    --app-header-inner-offset: 1.15rem;
     --app-font-display: "Inter", system-ui, sans-serif;
     --app-font-body: "Inter", system-ui, sans-serif;
     --app-font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 html, body, [data-testid="stAppViewContainer"] {
-    background: linear-gradient(180deg, #FFF8F8 0%, #FFFFFF 24%, #FFFFFF 100%) !important;
+    background: #FFFFFF !important;
     color: var(--yt-text) !important;
     font-family: var(--app-font-body);
     font-size: 15px;
@@ -47,18 +51,58 @@ html, body, [data-testid="stAppViewContainer"] {
     height: 3px !important;
     min-height: 3px !important;
     max-height: 3px !important;
-    background: linear-gradient(90deg, #FF0033, #FF5A76) !important;
+    background: var(--yt-red) !important;
 }
 
 [data-testid="stHeader"] {
-    background: rgba(255, 255, 255, 0.88) !important;
+    background: rgba(255, 255, 255, 0.94) !important;
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--yt-border);
 }
 
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFF7F8 100%) !important;
+    background: #FFFFFF !important;
     border-right: 1px solid var(--yt-border);
+}
+
+[data-testid="stSidebarNav"] {
+    padding-top: 0.15rem !important;
+}
+
+[data-testid="stSidebarNav"] ul {
+    gap: 0.35rem !important;
+}
+
+[data-testid="stSidebarNavLink"],
+[data-testid="stSidebarNav"] ul li a {
+    min-height: 42px !important;
+    padding: 0.58rem 0.72rem !important;
+    margin: 0.05rem 0 !important;
+    border-radius: 14px !important;
+    transition: background-color 0.14s ease, box-shadow 0.14s ease !important;
+}
+
+[data-testid="stSidebarNavLink"]:hover,
+[data-testid="stSidebarNav"] ul li a:hover {
+    background: var(--yt-hover) !important;
+}
+
+[data-testid="stSidebarNavLink"][aria-current="page"],
+[data-testid="stSidebarNav"] ul li a[aria-current="page"] {
+    background: #FFFFFF !important;
+    box-shadow: inset 3px 0 0 var(--yt-red), 0 1px 2px rgba(15, 15, 15, 0.05) !important;
+}
+
+[data-testid="stSidebarNavLink"] > div,
+[data-testid="stSidebarNav"] ul li a > div {
+    gap: 0.4rem !important;
+}
+
+[data-testid="stSidebarNavLink"] p,
+[data-testid="stSidebarNav"] ul li a p {
+    font-weight: 600 !important;
+    color: var(--yt-text) !important;
+    line-height: 1.25 !important;
 }
 
 [data-testid="stSidebarCollapsedControl"] button,
@@ -72,14 +116,14 @@ html, body, [data-testid="stAppViewContainer"] {
 
 .block-container {
     max-width: var(--app-page-width) !important;
-    padding-top: 2.1rem !important;
+    padding-top: var(--app-header-offset) !important;
     padding-bottom: 2.75rem;
     padding-left: 1.25rem !important;
     padding-right: 1.25rem !important;
 }
 
 section[data-testid="stMain"] > div {
-    padding-top: 0.85rem !important;
+    padding-top: var(--app-header-inner-offset) !important;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -91,7 +135,8 @@ section[data-testid="stMain"] > div {
 
 .yt-app-hero-shell {
     overflow: visible !important;
-    padding-top: 0.35rem;
+    padding-top: 0;
+    margin-top: 0.2rem;
 }
 
 .yt-page-title {
@@ -115,7 +160,7 @@ section[data-testid="stMain"] > div {
     padding: 1.1rem 1.2rem;
     border-radius: 22px;
     border: 1px solid var(--yt-border);
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+    background: var(--yt-card);
     box-shadow: var(--yt-shadow);
 }
 
@@ -124,7 +169,7 @@ section[data-testid="stMain"] > div {
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--yt-red-dark);
+    color: var(--yt-red);
     margin-bottom: 0.35rem;
 }
 
@@ -147,9 +192,9 @@ section[data-testid="stMain"] > div {
 
 .yt-section-underline {
     width: 76px;
-    height: 4px;
+    height: 3px;
     border-radius: 999px;
-    background: linear-gradient(90deg, #FF0033, #FF5A76);
+    background: var(--yt-red);
     margin-bottom: 0.95rem;
 }
 
@@ -164,7 +209,7 @@ section[data-testid="stMain"] > div {
     flex: 1 1 160px;
     padding: 0.95rem 1rem;
     border-radius: var(--app-radius-md);
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+    background: var(--yt-card);
     border: 1px solid var(--yt-border);
     box-shadow: var(--yt-shadow);
     transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
@@ -197,17 +242,17 @@ section[data-testid="stMain"] > div {
 .metric-delta.negative { color: #B42318; }
 
 .styled-dataframe thead tr th {
-    background: linear-gradient(90deg, #FF0033, #FF5A76) !important;
-    color: #FFFFFF !important;
-    border-bottom: none !important;
+    background: var(--yt-surface) !important;
+    color: var(--yt-text) !important;
+    border-bottom: 1px solid var(--yt-border) !important;
     font-family: var(--app-font-display);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
 
-.styled-dataframe tbody tr:nth-child(odd) { background-color: rgba(255, 248, 248, 0.55); }
-.styled-dataframe tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.92); }
+.styled-dataframe tbody tr:nth-child(odd) { background-color: #FCFCFC; }
+.styled-dataframe tbody tr:nth-child(even) { background-color: #FFFFFF; }
 
 .keyword-chip {
     display: inline-flex;
@@ -215,9 +260,9 @@ section[data-testid="stMain"] > div {
     padding: 0.32rem 0.62rem;
     margin: 0 0.4rem 0.4rem 0;
     border-radius: 999px;
-    background: rgba(255, 0, 51, 0.08);
-    border: 1px solid rgba(255, 0, 51, 0.12);
-    color: #B42318;
+    background: var(--yt-surface);
+    border: 1px solid var(--yt-border);
+    color: var(--yt-text-muted);
     font-size: 12px;
     font-weight: 700;
 }
@@ -261,10 +306,10 @@ section[data-testid="stMain"] > div {
 button[kind="primary"],
 .stButton > button[kind="primary"],
 .stFormSubmitButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #FF0033 0%, #FF5A76 100%) !important;
+    background: var(--yt-red) !important;
     color: #FFFFFF !important;
     border: none !important;
-    box-shadow: 0 16px 34px rgba(255, 0, 51, 0.22) !important;
+    box-shadow: 0 6px 14px rgba(15, 15, 15, 0.08) !important;
 }
 
 button[kind="primary"]:hover,
@@ -272,17 +317,17 @@ button[kind="primary"]:hover,
 .stFormSubmitButton > button[kind="primary"]:hover {
     transform: translateY(-1px);
     filter: brightness(1.02);
-    box-shadow: 0 20px 38px rgba(255, 0, 51, 0.28) !important;
+    box-shadow: 0 8px 18px rgba(15, 15, 15, 0.10) !important;
 }
 
 .stButton > button:not([kind="primary"]),
 .stFormSubmitButton > button:not([kind="primary"]),
 button[kind="secondary"],
 button[kind="secondaryFormSubmit"] {
-    background: #FFFFFF !important;
+    background: var(--yt-surface) !important;
     color: var(--yt-text) !important;
     border: 1px solid var(--yt-border) !important;
-    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06) !important;
+    box-shadow: none !important;
 }
 
 .stTextInput > div > div > input,
@@ -297,7 +342,7 @@ button[kind="secondaryFormSubmit"] {
     border: 1px solid var(--yt-border) !important;
     color: var(--yt-text) !important;
     min-height: var(--app-control-height) !important;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    box-shadow: 0 1px 2px rgba(15, 15, 15, 0.04);
 }
 
 .stTextInput > div > div:focus-within,
@@ -305,7 +350,7 @@ button[kind="secondaryFormSubmit"] {
 [data-baseweb="select"] > div:focus-within,
 [data-baseweb="input"] > div:focus-within {
     border-color: var(--yt-red-dark) !important;
-    box-shadow: 0 0 0 4px rgba(255, 0, 51, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.06) !important;
 }
 
 .stTextInput input::placeholder,
@@ -332,9 +377,10 @@ button[kind="secondaryFormSubmit"] {
 
 [data-testid="stSegmentedControl"] [aria-checked="true"],
 [data-testid="stSegmentedControl"] [data-selected="true"] {
-    background: linear-gradient(135deg, rgba(255, 0, 51, 0.10), rgba(255, 90, 118, 0.08)) !important;
-    color: var(--yt-red-dark) !important;
-    border: 1px solid rgba(255, 0, 51, 0.12) !important;
+    background: #FFFFFF !important;
+    color: var(--yt-red) !important;
+    border: 1px solid var(--yt-border) !important;
+    box-shadow: inset 0 -2px 0 var(--yt-red) !important;
 }
 
 .stToggle label, .stCheckbox label, .stRadio label, .stSelectbox label,
@@ -356,7 +402,7 @@ button[kind="secondaryFormSubmit"] {
 }
 
 [aria-selected="true"] p {
-    color: var(--yt-red-dark) !important;
+    color: var(--yt-red) !important;
     font-weight: 700 !important;
 }
 
@@ -364,7 +410,7 @@ button[kind="secondaryFormSubmit"] {
     border: 1px solid var(--yt-border) !important;
     border-radius: 16px !important;
     background: #FFFFFF !important;
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    box-shadow: none;
 }
 
 [data-testid="stExpander"] summary {
@@ -378,7 +424,7 @@ button[kind="secondaryFormSubmit"] {
 .yt-summary-panel {
     border-radius: var(--app-radius-lg);
     padding: 1.1rem 1.2rem;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
+    background: #FFFFFF;
     border: 1px solid var(--yt-border);
     box-shadow: var(--yt-shadow);
     margin-bottom: 1rem;
@@ -402,7 +448,7 @@ button[kind="secondaryFormSubmit"] {
     font-weight: 800;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--yt-red-dark);
+    color: var(--yt-text-muted);
 }
 
 .strategy-summary-list {

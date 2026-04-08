@@ -111,14 +111,13 @@ def _page_deployment() -> None:
 PAGE_CHANNEL_ANALYSIS = st.Page(
     _page_channel_analysis,
     title="Channel Analysis",
-    icon="📊",
     default=True,
 )
-PAGE_CHANNEL_INSIGHTS = st.Page(_page_channel_insights, title="Channel Insights", icon="💡")
-PAGE_MEDIA_LAB = st.Page(_page_media_lab, title="Media Lab", icon="🧰")
-PAGE_OUTLIER_FINDER = st.Page(_page_outlier_finder, title="Outlier Finder", icon="🎯")
-PAGE_YTUBER = st.Page(_page_ytuber, title="Ytuber", icon="🎬")
-PAGE_DEPLOYMENT = st.Page(_page_deployment, title="Deployment", icon="🚀")
+PAGE_CHANNEL_INSIGHTS = st.Page(_page_channel_insights, title="Channel Insights")
+PAGE_MEDIA_LAB = st.Page(_page_media_lab, title="Media Lab")
+PAGE_OUTLIER_FINDER = st.Page(_page_outlier_finder, title="Outlier Finder")
+PAGE_YTUBER = st.Page(_page_ytuber, title="Ytuber")
+PAGE_DEPLOYMENT = st.Page(_page_deployment, title="Deployment")
 
 
 def run() -> None:

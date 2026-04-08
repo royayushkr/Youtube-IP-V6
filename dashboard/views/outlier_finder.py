@@ -16,7 +16,11 @@ from dashboard.components.visualizations import (
     styled_dataframe,
     styled_keyword_chips,
 )
-from src.services.outlier_ai import InsightCard, OutlierAIReport, generate_outlier_ai_report
+from src.services.outlier_ai import (
+    OutlierAIReport,
+    generate_outlier_ai_report,
+    normalize_outlier_ai_sections,
+)
 from src.services.outliers_finder import (
     DURATION_BUCKET_ORDER,
     OutlierSearchRequest,
@@ -92,11 +96,11 @@ def _inject_outlier_css() -> None:
         """
         <style>
         [data-testid="stForm"] {
-            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,248,0.98) 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
             border-radius: 20px;
             padding: 1.5rem 1.5rem 1.2rem;
-            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+            box-shadow: var(--yt-shadow);
             margin: 0 auto 1.6rem;
             max-width: var(--app-command-width);
         }
@@ -108,10 +112,26 @@ def _inject_outlier_css() -> None:
             padding: 0.05rem 0.15rem;
         }
         [data-testid="stExpander"] {
-            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            border: 1px solid var(--yt-border) !important;
             border-radius: 14px !important;
             background: #FFFFFF !important;
             margin-top: 0.15rem;
+            box-shadow: none !important;
+        }
+        [data-testid="stExpander"] details {
+            border-radius: 14px !important;
+            background: #FFFFFF !important;
+        }
+        [data-testid="stExpander"] summary {
+            padding: 0.15rem 0.25rem !important;
+        }
+        [data-testid="stExpander"] summary p {
+            color: #0F0F0F !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+        }
+        [data-testid="stExpander"] summary:hover {
+            background: #F2F2F2 !important;
         }
         .outlier-page {
             max-width: var(--app-page-width);
@@ -128,9 +148,9 @@ def _inject_outlier_css() -> None:
             gap: 0.5rem;
             padding: 0.45rem 0.8rem;
             border-radius: 999px;
-            background: rgba(255, 0, 51, 0.08);
-            border: 1px solid rgba(255, 0, 51, 0.16);
-            color: #C62828;
+            background: #F2F2F2;
+            border: 1px solid var(--yt-border);
+            color: #FF0000;
             font-size: 12px;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -140,8 +160,8 @@ def _inject_outlier_css() -> None:
             width: 8px;
             height: 8px;
             border-radius: 999px;
-            background: linear-gradient(180deg, #FF0033 0%, #D92D20 100%);
-            box-shadow: 0 0 14px rgba(255, 0, 51, 0.24);
+            background: #FF0000;
+            box-shadow: none;
         }
         .outlier-title {
             font-family: "Inter", system-ui, sans-serif;
@@ -225,18 +245,18 @@ def _inject_outlier_css() -> None:
             padding: 0.55rem 0.8rem;
             margin: 0 auto 1.05rem;
             border-radius: 999px;
-            background: rgba(255, 0, 51, 0.08);
-            border: 1px solid rgba(255, 0, 51, 0.14);
-            color: #B42318;
+            background: #F9F9F9;
+            border: 1px solid var(--yt-border);
+            color: #606060;
             font-size: 12px;
         }
         .outlier-panel-note {
             margin-top: 1rem;
             padding: 0.8rem 0.95rem;
             border-radius: 14px;
-            border: 1px solid rgba(255, 0, 51, 0.12);
+            border: 1px solid var(--yt-border);
             background: #FFFFFF;
-            color: #475467;
+            color: #606060;
             font-size: 13px;
             line-height: 1.6;
         }
@@ -253,9 +273,9 @@ def _inject_outlier_css() -> None:
             border-radius: 16px;
             min-height: 156px;
             padding: 1rem 1rem 0.95rem;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
+            box-shadow: var(--yt-shadow);
             margin-bottom: 0.9rem;
         }
         .outlier-summary-label {
@@ -270,7 +290,7 @@ def _inject_outlier_css() -> None:
             font-size: 30px;
             font-weight: 700;
             line-height: 1.05;
-            color: #D92D20;
+            color: #0F0F0F;
         }
         .outlier-summary-detail {
             color: #667085;
@@ -281,9 +301,9 @@ def _inject_outlier_css() -> None:
         .outlier-result-card {
             border-radius: 16px;
             overflow: hidden;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
+            box-shadow: var(--yt-shadow);
             margin-bottom: 1rem;
             min-height: 455px;
             display: flex;
@@ -321,7 +341,7 @@ def _inject_outlier_css() -> None:
             min-height: 46px;
         }
         .outlier-result-channel {
-            color: #D92D20;
+            color: #606060;
             font-size: 12px;
             margin-top: 0.2rem;
         }
@@ -331,14 +351,14 @@ def _inject_outlier_css() -> None:
             padding: 0.5rem 0.62rem;
             border-radius: 18px;
             text-align: center;
-            background: rgba(255, 0, 0, 0.12);
-            border: 1px solid rgba(255, 0, 0, 0.35);
+            background: #FFFFFF;
+            border: 1px solid rgba(255, 0, 0, 0.16);
         }
         .outlier-score-value {
             font-family: "IBM Plex Mono", "Inter", monospace;
             font-size: 22px;
             font-weight: 700;
-            color: #FF6090;
+            color: #FF0000;
             line-height: 1;
         }
         .outlier-score-label {
@@ -351,7 +371,7 @@ def _inject_outlier_css() -> None:
         .outlier-score-band {
             margin-top: 0.26rem;
             font-size: 10px;
-            color: #FF7777;
+            color: #606060;
         }
         .outlier-metric-row {
             display: flex;
@@ -382,7 +402,7 @@ def _inject_outlier_css() -> None:
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            color: #D92D20 !important;
+            color: #065FD4 !important;
             font-weight: 700;
             font-size: 12px;
             padding-top: 0.7rem;
@@ -407,21 +427,18 @@ def _inject_outlier_css() -> None:
         }
         .outlier-ai-section-head {
             font-family: "Inter", system-ui, sans-serif;
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
-            color: #101828;
-            margin: 2rem 0 0.35rem;
-            padding-bottom: 0.4rem;
-            border-bottom: 3px solid rgba(255, 0, 51, 0.3);
+            color: #0F0F0F;
+            margin: 2rem 0 0.25rem;
             letter-spacing: -0.02em;
         }
         .outlier-ai-hero {
             border-radius: 16px;
             padding: 1.1rem 1.15rem;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            border-left: 4px solid #FF0033;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
+            box-shadow: var(--yt-shadow);
             margin-bottom: 1rem;
         }
         .outlier-ai-title {
@@ -433,44 +450,112 @@ def _inject_outlier_css() -> None:
             line-height: 1.25;
         }
         .outlier-ai-copy {
-            color: #475467;
+            color: #606060;
             font-size: 14px;
             line-height: 1.6;
         }
         .outlier-ai-meta {
             margin-top: 0.4rem;
-            color: #667085;
+            color: #606060;
             font-size: 12px;
+        }
+        .outlier-ai-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin: 0.75rem 0 0.35rem;
+        }
+        .outlier-ai-meta-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.34rem 0.65rem;
+            border-radius: 999px;
+            background: #F9F9F9;
+            border: 1px solid var(--yt-border);
+            color: #606060;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .outlier-ai-note-list {
+            margin: 0.6rem 0 0;
+            padding-left: 1rem;
+            color: #606060;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+        .outlier-ai-note-list li {
+            margin-bottom: 0.25rem;
+        }
+        .outlier-ai-item {
+            padding: 0.05rem 0 0.7rem;
+            margin-bottom: 0.7rem;
+            border-bottom: 1px solid var(--yt-border);
+        }
+        .outlier-ai-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0.1rem;
+            border-bottom: none;
+        }
+        .outlier-ai-item-title {
+            font-family: "Inter", system-ui, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: #0F0F0F;
+            margin-bottom: 0.28rem;
+        }
+        .outlier-ai-item-body {
+            color: #606060;
+            font-size: 13px;
+            line-height: 1.58;
+            margin: 0;
+        }
+        .outlier-ai-item-support {
+            color: #7A7A7A;
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 0.3rem;
         }
         .outlier-ai-card {
             border-radius: 16px;
-            min-height: 188px;
-            padding: 1rem 1rem 0.95rem;
+            min-height: 0;
+            padding: 0.85rem 0.95rem;
             background: #FFFFFF;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-            margin-bottom: 0.9rem;
+            border: 1px solid var(--yt-border);
+            box-shadow: none;
+            margin-bottom: 0.65rem;
             display: flex;
             flex-direction: column;
         }
         .outlier-ai-card-title {
             font-family: "Inter", system-ui, sans-serif;
-            font-size: 16px;
-            font-weight: 800;
-            color: #B42318;
-            margin-bottom: 0.35rem;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0F0F0F;
+            margin-bottom: 0.3rem;
         }
         .outlier-ai-card-body {
-            color: #475467;
+            color: #606060;
             font-size: 13px;
             line-height: 1.58;
             flex: 1;
         }
         .outlier-ai-card-support {
-            color: #667085;
+            color: #606060;
             font-size: 12px;
             line-height: 1.45;
-            margin-top: 0.5rem;
+            margin-top: 0.35rem;
+        }
+        .outlier-ai-accordion-copy {
+            color: #606060;
+            font-size: 13px;
+            line-height: 1.55;
+            margin: 0.2rem 0 0;
+        }
+        .outlier-ai-empty {
+            color: #606060;
+            font-size: 12px;
+            line-height: 1.5;
+            margin: 0.1rem 0 0.2rem;
         }
         .outlier-quality-card {
             min-height: 320px;
@@ -539,7 +624,7 @@ def _inject_outlier_css() -> None:
         }
         .outlier-method-card h4 {
             margin: 0 0 0.4rem;
-            color: #D92D20;
+            color: #0F0F0F;
             font-family: "Inter", system-ui, sans-serif;
         }
         .outlier-method-card p,
@@ -552,8 +637,8 @@ def _inject_outlier_css() -> None:
             margin-top: 0.4rem;
             padding: 0.9rem 1rem;
             border-radius: 14px;
-            border: 1px solid rgba(255, 0, 0, 0.2);
-            background: rgba(255, 0, 0, 0.06);
+            border: 1px solid var(--yt-border);
+            background: #F9F9F9;
             color: #667085;
             font-size: 12px;
             line-height: 1.62;
@@ -978,111 +1063,77 @@ def _render_scan_quality_card(result_frame: pd.DataFrame) -> None:
     )
 
 
-def _render_ai_card(card: InsightCard) -> None:
+def _provider_display_name(provider: str) -> str:
+    return AI_PROVIDER_LABELS.get(provider, provider.title())
+
+
+def _render_ai_research_header(report: OutlierAIReport) -> None:
+    meta_chips = [
+        _meta_pill_html("Provider", _provider_display_name(report.provider), state=True),
+        _meta_pill_html("Model", report.model, state=True),
+        _meta_pill_html("Confidence", report.confidence_label, state=True),
+    ]
+    notes = report.confidence_notes or ("Confidence reflects the strength of the public signals in this scan.",)
+    notes_html = "".join(f"<li>{escape(note)}</li>" for note in notes)
+    warnings_html = "".join(f'<span class="outlier-ai-meta-chip">{escape(warning)}</span>' for warning in report.warnings)
+
     st.markdown(
         (
-            '<div class="outlier-ai-card">'
-            f'<div class="outlier-ai-card-title">{escape(card.title)}</div>'
-            f'<div class="outlier-ai-card-body">{escape(card.body)}</div>'
-            f'<div class="outlier-ai-card-support">{escape(card.support)}</div>'
+            '<div class="outlier-ai-hero">'
+            f'<div class="outlier-ai-title">{escape(report.executive_headline)}</div>'
+            f'<div class="outlier-ai-copy">{escape(report.key_takeaway)}</div>'
+            f'<div class="outlier-ai-meta-row">{"".join(meta_chips)}</div>'
+            f'<ul class="outlier-ai-note-list">{notes_html}</ul>'
+            f'{f"<div class=\"outlier-ai-meta-row\">{warnings_html}</div>" if warnings_html else ""}'
             '</div>'
         ),
         unsafe_allow_html=True,
     )
 
 
-def _render_ai_card_grid(title: str, cards: Sequence[InsightCard], columns: int = 2) -> None:
-    if not cards:
-        return
-    _render_subsection_label(title)
-    pair_size = max(1, columns)
-    for start in range(0, len(cards), pair_size):
-        batch = cards[start:start + pair_size]
-        if len(batch) == 1:
-            _render_ai_card(batch[0])
-            continue
-        cols = st.columns(len(batch), gap="medium")
-        for col, card in zip(cols, batch):
-            with col:
-                _render_ai_card(card)
+def _render_ai_accordion(title: str, items: Sequence[Dict[str, str]], *, expanded: bool = False) -> None:
+    with st.expander(title, expanded=expanded):
+        if not items:
+            st.markdown('<div class="outlier-ai-empty">No structured items returned for this section in this run.</div>', unsafe_allow_html=True)
+            return
+
+        for item in items:
+            title_html = f'<div class="outlier-ai-item-title">{escape(item.get("title", ""))}</div>' if item.get("title") else ""
+            body_html = f'<div class="outlier-ai-item-body">{escape(item.get("body", ""))}</div>' if item.get("body") else ""
+            support_html = (
+                f'<div class="outlier-ai-item-support">{escape(item.get("support", ""))}</div>'
+                if item.get("support")
+                else ""
+            )
+            st.markdown(
+                (
+                    '<div class="outlier-ai-item">'
+                    f"{title_html}"
+                    f"{body_html}"
+                    f"{support_html}"
+                    '</div>'
+                ),
+                unsafe_allow_html=True,
+            )
 
 
-def _render_ai_report(report: OutlierAIReport) -> None:
-    top_cols = st.columns([1.7, 1], gap="medium")
-    with top_cols[0]:
-        st.markdown(
-            (
-                '<div class="outlier-ai-hero">'
-                f'<div class="outlier-ai-title">{escape(report.executive_headline)}</div>'
-                f'<div class="outlier-ai-copy">{escape(report.key_takeaway)}</div>'
-                f'<div class="outlier-ai-meta">Provider: {escape(report.provider.title())} • Model: {escape(report.model)} • Confidence: {escape(report.confidence_label)}</div>'
-                '</div>'
-            ),
-            unsafe_allow_html=True,
-        )
-    with top_cols[1]:
-        notes_html = "".join(f"<li>{escape(note)}</li>" for note in (report.confidence_notes or ("Confidence is based on the quality of the surfaced public signals.",)))
-        st.markdown(
-            (
-                '<div class="outlier-ai-card">'
-                '<div class="outlier-ai-card-title">Confidence And Caveats</div>'
-                f'<div class="outlier-ai-card-body"><ul class="outlier-bullets">{notes_html}</ul></div>'
-                '<div class="outlier-ai-card-support">Treat this as research guidance, not a prediction guarantee.</div>'
-                '</div>'
-            ),
-            unsafe_allow_html=True,
-        )
+def _render_ai_research_section(report: OutlierAIReport) -> None:
+    _render_ai_research_header(report)
 
-    _render_ai_card_grid("Breakout Themes", report.breakout_themes, columns=2)
-    _render_ai_card_grid("Title Pattern Observations", report.title_patterns, columns=2)
-    _render_ai_card_grid("Repeatable Content Angles", report.repeatable_angles, columns=2)
-    _render_ai_card_grid("Notable Anomalies", report.notable_anomalies, columns=2)
+    sections = normalize_outlier_ai_sections(report)
+    for idx, (title, items) in enumerate(sections.items()):
+        _render_ai_accordion(title, items, expanded=idx == 0)
 
-    if report.next_steps:
-        _render_subsection_label("What To Test Next")
-        for start in range(0, len(report.next_steps), 2):
-            batch = report.next_steps[start:start + 2]
-            if len(batch) == 1:
-                step = batch[0]
-                st.markdown(
-                    (
-                        '<div class="outlier-ai-card">'
-                        f'<div class="outlier-ai-card-title">Action {start + 1}</div>'
-                        f'<div class="outlier-ai-card-body">{escape(step)}</div>'
-                        '<div class="outlier-ai-card-support">Use this as the next concrete experiment to test against your current packaging and publishing rhythm.</div>'
-                        '</div>'
-                    ),
-                    unsafe_allow_html=True,
-                )
-                continue
-            cols = st.columns(2, gap="medium")
-            for idx, (col, step) in enumerate(zip(cols, batch), start=start + 1):
-                with col:
-                    st.markdown(
-                        (
-                            '<div class="outlier-ai-card">'
-                            f'<div class="outlier-ai-card-title">Action {idx}</div>'
-                            f'<div class="outlier-ai-card-body">{escape(step)}</div>'
-                            '<div class="outlier-ai-card-support">Use this as the next concrete experiment to test against your current packaging and publishing rhythm.</div>'
-                            '</div>'
-                        ),
-                        unsafe_allow_html=True,
-                    )
-
-    if report.warnings:
-        st.markdown(
-            f'<div class="outlier-panel-note">{" | ".join(escape(warning) for warning in report.warnings)}</div>',
-            unsafe_allow_html=True,
-        )
     if report.raw_fallback:
-        st.markdown('<div class="outlier-panel-note"><strong>Fallback Summary.</strong> The AI provider returned unstructured output for this run, so the text below is shown as plain summary copy.</div>', unsafe_allow_html=True)
-        st.markdown(report.raw_fallback)
+        st.markdown(
+            '<div class="outlier-panel-note"><strong>Fallback mode.</strong> The provider returned partially unstructured output, so the first section includes a compact fallback summary.</div>',
+            unsafe_allow_html=True,
+        )
 
     graph_insight_expander(
         "AI Research output",
-        "**Executive headline** — one-line read of the niche scan. **Key takeaway** — supporting story. "
-        "**Breakout themes / title patterns / angles / anomalies** — evidence-style cards grounded in the table above. "
-        "**Next actions** — concrete tests; treat as hypotheses until validated with your own uploads and analytics.",
+        "**Executive headline** gives the fastest read on the scan. **Key takeaway** adds the supporting story. "
+        "**Accordion sections** break the report into themes, packaging observations, repeatable angles, anomalies, and tests so you can open only the detail you need.",
     )
 
 
@@ -1578,9 +1629,8 @@ def render() -> None:
         (
             '<div class="outlier-ai-section-head">AI Research</div>'
             '<p style="color:#5F6368;font-size:14px;line-height:1.55;max-width:780px;margin:0 0 1rem;">'
-            "Turn the surfaced evidence into structured theme, title, angle, anomaly, and next-step cards "
-            "after you review the results above. Controls stay in the panel below; the report renders in "
-            "clear sections with highlighted titles."
+            "Turn the surfaced evidence into a compact insight panel. The summary stays visible at the top, "
+            "and the deeper theme, title, angle, anomaly, and test sections open only when you need them."
             "</p>"
         ),
         unsafe_allow_html=True,
@@ -1654,7 +1704,7 @@ def render() -> None:
 
         report = st.session_state.get("outlier_page_ai_report")
         if report:
-            _render_ai_report(report)
+            _render_ai_research_section(report)
         else:
             keyword_summary = build_title_keyword_summary(sorted_frame)
             preview_tokens = keyword_summary["keyword"].tolist()[:8] if not keyword_summary.empty else []
@@ -1662,7 +1712,7 @@ def render() -> None:
                 _render_subsection_label("Repeated Title Keywords In The Scan")
                 styled_keyword_chips(preview_tokens)
             st.markdown(
-                '<div class="outlier-panel-note">Generate AI research to transform the surfaced videos into theme cards, title observations, repeatable angles, and next-step recommendations.</div>',
+                '<div class="outlier-panel-note">Generate AI research to turn the surfaced videos into a compact five-part insight panel with expandable detail.</div>',
                 unsafe_allow_html=True,
             )
 

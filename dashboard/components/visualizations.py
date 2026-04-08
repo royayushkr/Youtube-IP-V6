@@ -9,15 +9,15 @@ from plotly.subplots import make_subplots
 import streamlit as st
 
 
-# Creator Insights palette (YouTube red-led, tuned for the light V6 shell)
+# Creator Insights palette (neutral-first YouTube-light shell)
 YT_COLORWAY: List[str] = [
-    "#FF0033",
-    "#FF5A76",
-    "#D92D20",
-    "#FDB022",
-    "#7A5AF8",
-    "#12B76A",
-    "#2E90FA",
+    "#FF0000",
+    "#065FD4",
+    "#34A853",
+    "#FBBC04",
+    "#7E57C2",
+    "#00ACC1",
+    "#5F6368",
 ]
 
 PLOTLY_INTERACTIVE_CONFIG: Dict[str, Any] = {
@@ -33,26 +33,26 @@ PLOTLY_DASHBOARD_TEMPLATE: Dict[str, Any] = {
         "paper_bgcolor": "rgba(0,0,0,0)",
         "plot_bgcolor": "#FFFFFF",
         "font": {
-            "color": "#475467",
+            "color": "#606060",
             "family": "Inter, system-ui, sans-serif",
         },
         "xaxis": {
-            "gridcolor": "rgba(15,23,42,0.08)",
-            "zerolinecolor": "rgba(15,23,42,0.08)",
-            "title": {"font": {"color": "#101828"}},
-            "tickfont": {"color": "#475467"},
+            "gridcolor": "#E5E5E5",
+            "zerolinecolor": "#E5E5E5",
+            "title": {"font": {"color": "#0F0F0F"}},
+            "tickfont": {"color": "#606060"},
         },
         "yaxis": {
-            "gridcolor": "rgba(15,23,42,0.08)",
-            "zerolinecolor": "rgba(15,23,42,0.08)",
-            "title": {"font": {"color": "#101828"}},
-            "tickfont": {"color": "#475467"},
+            "gridcolor": "#E5E5E5",
+            "zerolinecolor": "#E5E5E5",
+            "title": {"font": {"color": "#0F0F0F"}},
+            "tickfont": {"color": "#606060"},
         },
         "colorway": YT_COLORWAY,
         "hoverlabel": {
             "bgcolor": "#FFFFFF",
-            "font": {"color": "#101828"},
-            "bordercolor": "#FF0033",
+            "font": {"color": "#0F0F0F"},
+            "bordercolor": "#E5E5E5",
         },
     }
 }
@@ -68,13 +68,13 @@ def apply_dashboard_chart_theme(fig: go.Figure) -> go.Figure:
         title_font=dict(
             size=17,
             family="Inter, system-ui, sans-serif",
-            color="#101828",
+            color="#0F0F0F",
         ),
         legend=dict(
             bgcolor="rgba(255,255,255,0.96)",
-            bordercolor="rgba(15,23,42,0.08)",
+            bordercolor="#E5E5E5",
             borderwidth=1,
-            font=dict(color="#475467"),
+            font=dict(color="#606060"),
         ),
     )
     return fig
@@ -227,9 +227,9 @@ def plotly_bar_chart(
     title: str,
     horizontal: bool = False,
 ) -> go.Figure:
-    """Create a bar chart with red → cyan emphasis (Creator Insights charts)."""
-    bar_line = dict(color="rgba(15,23,42,0.08)", width=0.8)
-    _bar_cs = [[0, "rgba(255,0,51,0.18)"], [0.5, "#FF0033"], [1, "#FF5A76"]]
+    """Create a bar chart with a restrained blue-led emphasis for the light shell."""
+    bar_line = dict(color="#E5E5E5", width=0.8)
+    _bar_cs = [[0, "#D2E3FC"], [0.5, "#7BAAF7"], [1, "#065FD4"]]
     if horizontal:
         fig = go.Figure(
             go.Bar(
@@ -333,9 +333,9 @@ def plotly_gauge_chart(
                 "axis": {"range": [0, max_val]},
                 "bar": {"color": "#FF0000"},
                 "steps": [
-                    {"range": [0, max_val * 0.5], "color": "rgba(22,33,62,0.85)"},
-                    {"range": [max_val * 0.5, max_val * 0.8], "color": "rgba(0,212,255,0.15)"},
-                    {"range": [max_val * 0.8, max_val], "color": "rgba(255,0,0,0.25)"},
+                    {"range": [0, max_val * 0.5], "color": "rgba(229,229,229,0.85)"},
+                    {"range": [max_val * 0.5, max_val * 0.8], "color": "rgba(6,95,212,0.14)"},
+                    {"range": [max_val * 0.8, max_val], "color": "rgba(255,0,0,0.16)"},
                 ],
             },
             title={"text": title},
@@ -393,7 +393,7 @@ def plotly_treemap(
         path=path,
         values=values,
         color=values,
-        color_continuous_scale=["rgba(255,0,0,0.2)", "#FF0000", "#00D4FF"],
+        color_continuous_scale=["#E8F0FE", "#7BAAF7", "#065FD4"],
     )
     fig.update_layout(title=title)
     apply_dashboard_chart_theme(fig)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
@@ -32,6 +33,60 @@ class OutlierAIReport:
     next_steps: Tuple[str, ...]
     warnings: Tuple[str, ...]
     raw_fallback: str = ""
+
+
+def normalize_outlier_ai_sections(report: OutlierAIReport) -> "OrderedDict[str, List[Dict[str, str]]]":
+    def _card_items(cards: Sequence[InsightCard]) -> List[Dict[str, str]]:
+        items: List[Dict[str, str]] = []
+        for card in cards:
+            title = _safe_text(card.title)
+            body = _safe_text(card.body)
+            support = _safe_text(card.support)
+            if not title and not body and not support:
+                continue
+            items.append(
+                {
+                    "title": title,
+                    "body": body,
+                    "support": support,
+                }
+            )
+        return items
+
+    sections: "OrderedDict[str, List[Dict[str, str]]]" = OrderedDict(
+        [
+            ("Breakout Themes", _card_items(report.breakout_themes)),
+            ("Title Pattern Observations", _card_items(report.title_patterns)),
+            ("Repeatable Content Angles", _card_items(report.repeatable_angles)),
+            ("Notable Anomalies", _card_items(report.notable_anomalies)),
+            (
+                "What To Test Next",
+                [
+                    {
+                        "title": f"Test {idx}",
+                        "body": _safe_text(step),
+                        "support": "Use this as a concrete experiment to validate against your own packaging and audience response.",
+                    }
+                    for idx, step in enumerate(report.next_steps, start=1)
+                    if _safe_text(step)
+                ],
+            ),
+        ]
+    )
+
+    if report.raw_fallback and not sections["Breakout Themes"]:
+        clipped = _safe_text(report.raw_fallback)
+        if len(clipped) > 420:
+            clipped = clipped[:417].rstrip() + "..."
+        sections["Breakout Themes"].append(
+            {
+                "title": "Fallback Summary",
+                "body": clipped,
+                "support": "The provider returned unstructured output for this run, so the panel is showing a compact fallback summary.",
+            }
+        )
+
+    return sections
 
 
 def _extract_json_block(text: str) -> Optional[Dict[str, Any]]:

@@ -3,8 +3,9 @@
 toolbarMode = "auto"
 
 [theme]
-primaryColor = "#FF0033"
+base = "light"
+primaryColor = "#FF0000"
 backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#FFF6F7"
-textColor = "#101828"
+secondaryBackgroundColor = "#F9F9F9"
+textColor = "#0F0F0F"
 font = "sans serif"

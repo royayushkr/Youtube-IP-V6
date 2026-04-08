@@ -113,9 +113,9 @@ def _inject_media_lab_css() -> None:
         .media-lab-hero {
             padding: 1.4rem 1.55rem;
             border-radius: 28px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(255,245,247,0.98) 100%);
-            border: 1px solid rgba(229, 57, 53, 0.10);
-            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
+            box-shadow: var(--yt-shadow);
             margin-bottom: 1.2rem;
         }
         .media-lab-kicker {
@@ -124,9 +124,9 @@ def _inject_media_lab_css() -> None:
             gap: 0.5rem;
             padding: 0.48rem 0.82rem;
             border-radius: 999px;
-            background: rgba(229, 57, 53, 0.08);
-            border: 1px solid rgba(229, 57, 53, 0.16);
-            color: #C62828;
+            background: #F2F2F2;
+            border: 1px solid var(--yt-border);
+            color: #FF0000;
             font-size: 12px;
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -136,8 +136,8 @@ def _inject_media_lab_css() -> None:
             width: 9px;
             height: 9px;
             border-radius: 999px;
-            background: linear-gradient(180deg, #FF0033 0%, #D93025 100%);
-            box-shadow: 0 0 18px rgba(255, 0, 51, 0.24);
+            background: #FF0000;
+            box-shadow: none;
         }
         .media-lab-title {
             font-family: var(--app-font-display);
@@ -171,17 +171,17 @@ def _inject_media_lab_css() -> None:
         }
         .media-lab-bento {
             border-radius: 24px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
+            border: 1px solid var(--yt-border);
             background: #FFFFFF;
-            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+            box-shadow: var(--yt-shadow);
             padding: 1.1rem 1.15rem;
             margin-bottom: 1rem;
             transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
         }
         .media-lab-bento:hover {
             transform: translateY(-2px);
-            box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
-            border-color: rgba(229, 57, 53, 0.18);
+            box-shadow: var(--yt-shadow-hover);
+            border-color: #D0D0D0;
         }
         .media-lab-card-title {
             font-family: var(--app-font-display);
@@ -202,8 +202,8 @@ def _inject_media_lab_css() -> None:
         }
         .media-lab-stat {
             border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF7F8 100%);
+            border: 1px solid var(--yt-border);
+            background: #F9F9F9;
             padding: 0.9rem 0.95rem;
         }
         .media-lab-stat-label {
@@ -231,8 +231,8 @@ def _inject_media_lab_css() -> None:
         .media-lab-artifact {
             padding: 0.85rem 0.95rem;
             border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF9FA 100%);
+            border: 1px solid var(--yt-border);
+            background: #FFFFFF;
             margin-top: 0.8rem;
         }
         .media-lab-artifact-label {

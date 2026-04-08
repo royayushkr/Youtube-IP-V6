@@ -260,9 +260,9 @@ def _inject_ytuber_css() -> None:
             gap: 0.55rem;
             padding: 0.42rem 0.78rem;
             border-radius: 999px;
-            background: rgba(255, 0, 51, 0.08);
-            border: 1px solid rgba(255, 0, 51, 0.16);
-            color: #C62828;
+            background: #F2F2F2;
+            border: 1px solid var(--yt-border);
+            color: #FF0000;
             font-size: 12px;
             letter-spacing: 0.10em;
             text-transform: uppercase;
@@ -272,14 +272,14 @@ def _inject_ytuber_css() -> None:
             width: 8px;
             height: 8px;
             border-radius: 999px;
-            background: linear-gradient(180deg, #FF0033 0%, #D92D20 100%);
-            box-shadow: 0 0 14px rgba(255, 0, 51, 0.22);
+            background: #FF0000;
+            box-shadow: none;
         }
         .ytuber-kicker {
             font-size: 12px;
             letter-spacing: 0.16em;
             text-transform: uppercase;
-            color: #D92D20;
+            color: #606060;
             margin-bottom: 0.5rem;
         }
         .ytuber-title {
@@ -333,10 +333,10 @@ def _inject_ytuber_css() -> None:
             border-radius: 20px;
             padding: 0.95rem 1rem;
             margin-bottom: 1rem;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
             border-left: 4px solid #FF0000;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            box-shadow: var(--yt-shadow);
         }
         .ytuber-banner-title {
             font-size: 18px;
@@ -346,7 +346,7 @@ def _inject_ytuber_css() -> None:
         }
         .ytuber-banner-meta {
             font-size: 13px;
-            color: #D92D20;
+            color: #606060;
         }
         .ytuber-footer-card {
             padding: 0.48rem 0.62rem;
@@ -375,9 +375,9 @@ def _inject_ytuber_css() -> None:
         .outlier-card {
             border-radius: 20px;
             overflow: hidden;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
+            box-shadow: var(--yt-shadow);
             margin-bottom: 1rem;
         }
         .outlier-card img {
@@ -406,7 +406,7 @@ def _inject_ytuber_css() -> None:
         }
         .outlier-card-channel {
             font-size: 12px;
-            color: #D92D20;
+            color: #606060;
         }
         .outlier-score-badge {
             flex-shrink: 0;
@@ -414,9 +414,9 @@ def _inject_ytuber_css() -> None:
             text-align: center;
             padding: 0.4rem 0.6rem;
             border-radius: 16px;
-            background: rgba(255, 0, 51, 0.08);
-            border: 1px solid rgba(255, 0, 51, 0.14);
-            color: #B42318;
+            background: #F9F9F9;
+            border: 1px solid var(--yt-border);
+            color: #C62828;
         }
         .outlier-score-value {
             font-size: 20px;
@@ -457,7 +457,7 @@ def _inject_ytuber_css() -> None:
         .outlier-link {
             margin-top: 0.7rem;
             display: inline-block;
-            color: #D92D20 !important;
+            color: #065FD4 !important;
             font-size: 12px;
             font-weight: 600;
             text-decoration: none;
@@ -465,9 +465,9 @@ def _inject_ytuber_css() -> None:
         .ytuber-score-card {
             padding: 1rem 1.05rem;
             border-radius: 20px;
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF8F8 100%);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+            background: #FFFFFF;
+            border: 1px solid var(--yt-border);
+            box-shadow: var(--yt-shadow);
             margin-bottom: 0.8rem;
         }
         .ytuber-score-label {
@@ -509,7 +509,7 @@ def _inject_ytuber_css() -> None:
             display: block;
             height: 100%;
             border-radius: 999px;
-            background: linear-gradient(90deg, #FF0033 0%, #FF5A76 100%);
+            background: #FF0000;
         }
         .ytuber-score-note {
             font-size: 12px;
@@ -552,8 +552,8 @@ def _inject_ytuber_css() -> None:
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
         }
         div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) [data-baseweb="input"]:focus-within {
-            border-color: rgba(255, 0, 51, 0.28) !important;
-            box-shadow: 0 0 0 2px rgba(255, 0, 51, 0.08), 0 12px 36px rgba(15, 23, 42, 0.12) !important;
+            border-color: rgba(255, 0, 0, 0.25) !important;
+            box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.06), 0 12px 36px rgba(15, 23, 42, 0.12) !important;
         }
         div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) input {
             font-size: 16px !important;
