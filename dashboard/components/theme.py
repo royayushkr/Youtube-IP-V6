@@ -5,22 +5,14 @@ import streamlit as st
 from dashboard.components.inputs import SEARCH_INPUT_LABELS
 
 
-def _build_search_input_surface_selectors() -> str:
+def _build_search_input_widget_selectors() -> str:
     return ",\n".join(
-        f'div[data-baseweb="input"]:has(input[aria-label="{label}"]) > div'
+        f'div[data-testid="stTextInput"]:has(input[aria-label="{label}"])'
         for label in SEARCH_INPUT_LABELS
     )
 
 
-def _build_search_input_inner_selectors() -> str:
-    return ",\n".join(
-        f'div[data-baseweb="input"]:has(input[aria-label="{label}"]) input'
-        for label in SEARCH_INPUT_LABELS
-    )
-
-
-SEARCH_INPUT_SURFACE_SELECTORS = _build_search_input_surface_selectors()
-SEARCH_INPUT_INNER_SELECTORS = _build_search_input_inner_selectors()
+SEARCH_INPUT_WIDGET_SELECTORS = _build_search_input_widget_selectors()
 
 
 def _build_global_theme_css() -> str:
@@ -63,7 +55,7 @@ def _build_global_theme_css() -> str:
         --app-input-focus-border: #F43F5E;
         --app-input-focus-shadow: 0 0 0 3px rgba(255, 0, 51, 0.10);
         --app-input-placeholder: #9CA3AF;
-        --app-header-height: 3.6rem;
+        --app-top-clearance: 5.85rem;
         --app-page-width: 1220px;
         --app-command-width: 1040px;
         --app-section-width: 1140px;
@@ -89,9 +81,7 @@ def _build_global_theme_css() -> str:
     }
 
     html, body, [data-testid="stAppViewContainer"] {
-        background:
-            radial-gradient(circle at top center, rgba(255, 0, 51, 0.05) 0%, transparent 28%),
-            linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%) !important;
+        background: var(--app-bg) !important;
         color: var(--app-text) !important;
         font-family: var(--app-font-body);
         font-size: 15px;
@@ -104,9 +94,8 @@ def _build_global_theme_css() -> str:
     }
 
     [data-testid="stHeader"] {
-        height: var(--app-header-height) !important;
-        background: rgba(255, 255, 255, 0.82) !important;
-        backdrop-filter: blur(18px);
+        background: rgba(255, 255, 255, 0.94) !important;
+        backdrop-filter: blur(14px);
         border-bottom: 1px solid rgba(229, 231, 235, 0.92) !important;
         box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
     }
@@ -117,17 +106,6 @@ def _build_global_theme_css() -> str:
 
     [data-testid="stDecoration"] {
         display: none !important;
-    }
-
-    [data-testid="stStatusWidget"] {
-        visibility: hidden !important;
-        width: 0 !important;
-        opacity: 0 !important;
-    }
-
-    [data-testid="stToolbar"] {
-        top: 0.35rem !important;
-        right: 0.9rem !important;
     }
 
     [data-testid="stToolbar"] button {
@@ -150,23 +128,19 @@ def _build_global_theme_css() -> str:
 
     .block-container {
         max-width: var(--app-page-width) !important;
-        padding-top: calc(var(--app-header-height) + 1rem) !important;
+        padding-top: var(--app-top-clearance) !important;
         padding-bottom: 2.75rem !important;
         padding-left: 1.25rem !important;
         padding-right: 1.25rem !important;
     }
 
     section[data-testid="stMain"] > div {
-        padding-top: 0 !important;
-    }
-
-    .stAppDeployButton {
-        display: none !important;
+        padding-top: 0.25rem !important;
     }
 
     .app-shell-header {
         max-width: 900px;
-        margin: 0 auto 1.55rem;
+        margin: 0 auto 1.75rem;
     }
 
     .app-shell-header.centered {
@@ -208,7 +182,7 @@ def _build_global_theme_css() -> str:
         margin: 0 auto;
         color: var(--app-text-muted);
         font-size: 1rem;
-        line-height: 1.72;
+        line-height: 1.68;
     }
 
     .app-shell-badge-row,
@@ -227,11 +201,11 @@ def _build_global_theme_css() -> str:
         padding: 0.42rem 0.8rem;
         border-radius: var(--app-radius-pill);
         border: 1px solid var(--app-border);
-        background: rgba(255, 255, 255, 0.88);
+        background: var(--app-surface);
         color: var(--app-text-muted);
         font-size: 12px;
         font-weight: 600;
-        box-shadow: var(--app-shadow-sm);
+        box-shadow: none;
     }
 
     .app-shell-context-card,
@@ -241,10 +215,9 @@ def _build_global_theme_css() -> str:
         margin: 1.05rem auto 0;
         padding: 1.25rem 1.35rem;
         border-radius: var(--app-radius-xl);
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(250, 251, 252, 0.98) 100%);
-        border: 1px solid rgba(229, 231, 235, 0.92);
-        box-shadow: var(--app-shadow-md);
+        background: #FFFFFF;
+        border: 1px solid var(--app-border);
+        box-shadow: var(--app-shadow-sm);
     }
 
     .app-shell-context-eyebrow,
@@ -780,8 +753,7 @@ def _build_sidebar_css() -> str:
 
     [data-testid="stSidebarCollapsedControl"],
     [data-testid="collapsedControl"] {
-        top: 0.65rem !important;
-        left: 0.75rem !important;
+        z-index: 40 !important;
     }
 
     [data-testid="stSidebarCollapsedControl"] button,
@@ -890,29 +862,46 @@ def _build_sidebar_css() -> str:
 def _build_search_input_css() -> str:
     return f"""
     <style>
-    {SEARCH_INPUT_SURFACE_SELECTORS} {{
+    {SEARCH_INPUT_WIDGET_SELECTORS} {{
+        overflow: visible !important;
+    }}
+
+    {SEARCH_INPUT_WIDGET_SELECTORS} [data-baseweb="input"] {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }}
+
+    {SEARCH_INPUT_WIDGET_SELECTORS} [data-baseweb="input"] > div {{
         min-height: var(--app-search-height) !important;
         border-radius: var(--app-input-pill-radius) !important;
         padding-left: 1.1rem !important;
         padding-right: 1.1rem !important;
-        background: linear-gradient(180deg, #FFFFFF 0%, #FCFCFD 100%) !important;
-        box-shadow: var(--app-shadow-sm) !important;
+        background: #FFFFFF !important;
+        border: 1px solid var(--app-input-border) !important;
+        box-shadow: none !important;
+        align-items: center !important;
+        overflow: hidden !important;
     }}
 
-    {SEARCH_INPUT_SURFACE_SELECTORS}:hover {{
+    {SEARCH_INPUT_WIDGET_SELECTORS} [data-baseweb="input"] > div:hover {{
         border-color: var(--app-input-hover-border) !important;
     }}
 
-    {SEARCH_INPUT_SURFACE_SELECTORS}:focus-within {{
+    {SEARCH_INPUT_WIDGET_SELECTORS} [data-baseweb="input"] > div:focus-within {{
         border-color: var(--app-input-focus-border) !important;
         box-shadow: var(--app-input-focus-shadow) !important;
     }}
 
-    {SEARCH_INPUT_INNER_SELECTORS} {{
+    {SEARCH_INPUT_WIDGET_SELECTORS} input {{
         padding: 0 !important;
         margin: 0 !important;
         min-height: calc(var(--app-search-height) - 2px) !important;
-        line-height: 1.55 !important;
+        line-height: 1.35 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }}
     </style>
     """

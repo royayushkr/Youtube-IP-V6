@@ -127,9 +127,9 @@ def run() -> None:
         [
             PAGE_CHANNEL_ANALYSIS,
             PAGE_CHANNEL_INSIGHTS,
-            PAGE_MEDIA_LAB,
-            PAGE_OUTLIER_FINDER,
             PAGE_YTUBER,
+            PAGE_OUTLIER_FINDER,
+            PAGE_MEDIA_LAB,
             PAGE_DEPLOYMENT,
         ],
         expanded=True,

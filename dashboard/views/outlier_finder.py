@@ -109,8 +109,8 @@ def _inject_outlier_css() -> None:
             row-gap: 0.95rem;
         }
         [data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] {
-            min-height: calc(var(--app-control-height) + 40px);
-            padding: 0.05rem 0.15rem;
+            min-height: auto;
+            padding: 0;
         }
         [data-testid="stExpander"] {
             border: 1px solid var(--yt-border) !important;
