@@ -31,8 +31,8 @@ APP_THEME_CSS = """
     --app-page-width: 1200px;
     --app-command-width: 1000px;
     --app-section-width: 1120px;
-    --app-header-offset: 4.5rem;
-    --app-header-inner-offset: 1.15rem;
+    --app-header-offset: 0.85rem;
+    --app-header-inner-offset: 0.15rem;
     --app-font-display: "Inter", system-ui, sans-serif;
     --app-font-body: "Inter", system-ui, sans-serif;
     --app-font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -47,17 +47,15 @@ html, body, [data-testid="stAppViewContainer"] {
     -webkit-font-smoothing: antialiased;
 }
 
-[data-testid="stDecoration"] {
-    height: 3px !important;
-    min-height: 3px !important;
-    max-height: 3px !important;
-    background: var(--yt-red) !important;
-}
-
-[data-testid="stHeader"] {
-    background: rgba(255, 255, 255, 0.94) !important;
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--yt-border);
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
 }
 
 [data-testid="stSidebar"] {
@@ -136,7 +134,7 @@ section[data-testid="stMain"] > div {
 .yt-app-hero-shell {
     overflow: visible !important;
     padding-top: 0;
-    margin-top: 0.2rem;
+    margin-top: 0;
 }
 
 .yt-page-title {

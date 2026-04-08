@@ -1,6 +1,6 @@
 [client]
-# "minimal" can confuse some hosts; "auto" keeps scrolling/nav reliable. Override locally if you prefer.
-toolbarMode = "auto"
+# Keep the host toolbar out of the app chrome so page titles start cleanly below the viewport edge.
+toolbarMode = "minimal"
 
 [theme]
 base = "light"
