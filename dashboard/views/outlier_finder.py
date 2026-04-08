@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+from dashboard.components.inputs import render_search_input, render_text_input
 from dashboard.components.visualizations import (
     apply_dashboard_chart_theme,
     graph_insight_expander,
@@ -1260,7 +1261,7 @@ def render() -> None:
 
         query_cols = st.columns([1.8, 1], gap="medium")
         with query_cols[0]:
-            niche_query = st.text_input(
+            niche_query = render_search_input(
                 "Niche Or Keyword",
                 key="outlier_page_query",
                 placeholder="AI automation, documentary storytelling, science shorts, luxury fitness...",
@@ -1372,7 +1373,7 @@ def render() -> None:
                     unsafe_allow_html=True,
                 )
 
-        exclude_keywords_text = st.text_input(
+        exclude_keywords_text = render_text_input(
             "Exclude Keywords",
             key="outlier_page_exclude_keywords",
             placeholder="news, reaction, podcast clips",

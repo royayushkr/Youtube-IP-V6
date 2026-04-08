@@ -19,6 +19,7 @@ except (ImportError, ModuleNotFoundError, OSError):
     build = None
     HttpError = Exception
 
+from dashboard.components.inputs import render_search_input, render_text_area, render_text_input
 from dashboard.components.visualizations import (
     kpi_row,
     plotly_bar_chart,
@@ -543,21 +544,6 @@ def _inject_ytuber_css() -> None:
             font-size: 20px !important;
             margin-top: 1.1rem !important;
             margin-bottom: 0.45rem !important;
-        }
-        div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) [data-baseweb="input"] {
-            min-height: 3.5rem !important;
-            border-radius: 999px !important;
-            border: 1px solid rgba(15, 23, 42, 0.08) !important;
-            background: #FFFFFF !important;
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
-        }
-        div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) [data-baseweb="input"]:focus-within {
-            border-color: rgba(255, 0, 0, 0.25) !important;
-            box-shadow: 0 0 0 2px rgba(255, 0, 0, 0.06), 0 12px 36px rgba(15, 23, 42, 0.12) !important;
-        }
-        div[data-testid="stTextInput"]:has(input[aria-label="Search Channel"]) input {
-            font-size: 16px !important;
-            color: #101828 !important;
         }
         .stButton > button,
         .stFormSubmitButton > button {
@@ -1898,7 +1884,7 @@ def _render_outliers_finder(current_channel_title: str) -> None:
     )
 
     with st.form("ytuber_outliers_form"):
-        niche_query = st.text_input(
+        niche_query = render_text_input(
             "Niche or keyword",
             key="ytuber_outliers_query",
             placeholder="AI automation, fitness for busy professionals, tech explainer, science shorts...",
@@ -2152,8 +2138,8 @@ def _render_outliers_finder(current_channel_title: str) -> None:
 def _render_title_seo_lab(keyword_hints: List[str]) -> None:
     section_header("Title & SEO Lab", icon="🧪")
     st.caption("Scores update as the title or description changes. Use this editor to pressure-test hooks before you generate more ideas.")
-    test_title = st.text_input("Test title", value="The Hidden Physics Trick That Changes Everything")
-    test_desc = st.text_area(
+    test_title = render_text_input("Test title", value="The Hidden Physics Trick That Changes Everything")
+    test_desc = render_text_area(
         "Test description",
         value="In this video we break down the science, show real examples, and explain how to apply this idea. Subscribe for more! #science #learning",
         height=120,
@@ -2224,7 +2210,7 @@ def _render_competitor_benchmark(
     channel_id: str,
 ) -> None:
     section_header("Competitor Benchmark", icon="📊")
-    handles = st.text_area(
+    handles = render_text_area(
         "Competitor handles (comma separated)",
         value="@3blue1brown,@veritasium,@smartereveryday",
         height=90,
@@ -2765,7 +2751,7 @@ def _render_ai_studio(
             STRATEGY_FILTERS,
             default=["Evergreen", "High CTR"],
         )
-        exclude_topics = st.text_input(
+        exclude_topics = render_text_input(
             "Exclude / avoid",
             value="",
             placeholder="Overused themes, competitors, claims to avoid",
@@ -2777,7 +2763,7 @@ def _render_ai_studio(
         if prompt_goal
         else f"Channel: {channel_title}. Create a high-performing next-month content plan grounded in the current stats."
     )
-    creative_brief = st.text_area(
+    creative_brief = render_text_area(
         "Creative brief",
         value=default_brief,
         key="ytuber_creative_brief",
@@ -3009,7 +2995,7 @@ def render() -> None:
         )
         input_cols = st.columns([4.2, 1.45], gap="small")
         with input_cols[0]:
-            growth_prompt = st.text_input(
+            growth_prompt = render_search_input(
                 "Search Channel",
                 key="ytuber_growth_prompt",
                 placeholder="Search YouTube by @handle, channel name, or UC channel ID",

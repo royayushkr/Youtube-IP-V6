@@ -5,6 +5,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from dashboard.components.inputs import render_search_input, render_text_area, render_text_input
 from dashboard.components.visualizations import section_header
 from src.llm_integration.thumbnail_generator import ThumbnailGenerator, get_api_key
 from src.services.thumbnail_hub_service import PreparedThumbnailArtifact, ThumbnailPreview, prepare_thumbnail_download, preview_thumbnail_target
@@ -246,15 +247,15 @@ def _render_generate_tab() -> None:
     model_meta = _catalog_map(provider)[model]
 
     default_api_key = get_api_key(provider) or ""
-    api_key = st.text_input(
+    api_key = render_text_input(
         "API Key",
         value=default_api_key,
         type="password",
         help="Leave this as-is if your provider key is already configured in Streamlit secrets.",
     )
 
-    title = st.text_input("Video Title", value="The Physics of Black Holes in 10 Minutes")
-    context = st.text_area(
+    title = render_text_input("Video Title", value="The Physics of Black Holes in 10 Minutes")
+    context = render_text_area(
         "Creative Context",
         value=(
             "Audience: curious students and lifelong learners. "
@@ -262,12 +263,12 @@ def _render_generate_tab() -> None:
         ),
         height=120,
     )
-    style = st.text_area(
+    style = render_text_area(
         "Style Direction",
         value="Bold contrast, one clear subject, cinematic lighting, 16:9 composition, no clutter.",
         height=90,
     )
-    negative_prompt = st.text_input(
+    negative_prompt = render_text_input(
         "Avoid",
         value="tiny text, low contrast, too many subjects, busy background",
     )
@@ -381,7 +382,7 @@ def _render_download_tab() -> None:
             unsafe_allow_html=True,
         )
         with st.form("thumbnail_lookup_form", clear_on_submit=False):
-            lookup_value = st.text_input(
+            lookup_value = render_search_input(
                 "YouTube Video URL Or ID",
                 key="thumbnails_lookup_value",
                 placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/...",
@@ -488,4 +489,3 @@ def render() -> None:
         _render_generate_tab()
     with tabs[1]:
         _render_download_tab()
-

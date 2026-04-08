@@ -7,6 +7,7 @@ from typing import Any
 
 import streamlit as st
 
+from dashboard.components.inputs import render_search_input, render_text_area, render_text_input
 from dashboard.components.visualizations import section_header
 from src.llm_integration.thumbnail_generator import ThumbnailGenerator, get_api_key
 from src.services.media_error_service import MediaErrorInfo, map_media_error
@@ -484,7 +485,7 @@ def _lookup_video() -> None:
         st.markdown("### Video Lookup")
         st.caption("Paste one public YouTube watch URL, Short URL, youtu.be URL, or direct video ID.")
         with st.form("media_lab_lookup_form", clear_on_submit=False):
-            lookup_value = st.text_input(
+            lookup_value = render_search_input(
                 "YouTube URL Or Video ID",
                 key="media_lab_lookup_value",
                 placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/...",
@@ -610,7 +611,7 @@ def _render_transcript_panel(preview: VideoMetadata, transcripts: list[Transcrip
         transcript_text = st.session_state.get("media_lab_transcript_text", "")
         artifact: PreparedArtifact | None = st.session_state.get("media_lab_transcript_artifact")
         if transcript_text:
-            st.text_area("Transcript Preview", value=transcript_text, height=240, key="media_lab_transcript_preview")
+            render_text_area("Transcript Preview", value=transcript_text, height=240, key="media_lab_transcript_preview")
         if artifact:
             _render_artifact_panel(
                 "Prepared Transcript",
@@ -693,27 +694,27 @@ def _render_thumbnail_download_panel(thumbnail_preview: ThumbnailPreview | None)
         model_meta = _catalog_map(provider)[model]
 
         default_api_key = get_api_key(provider) or ""
-        api_key = st.text_input(
+        api_key = render_text_input(
             "Provider API Key",
             value=default_api_key,
             type="password",
             key="media_lab_generate_api_key",
             help="Leave this unchanged if the provider key is already configured in Streamlit secrets.",
         )
-        title = st.text_input("Thumbnail Title", value=st.session_state.get("media_lab_preview").title if st.session_state.get("media_lab_preview") else "The Physics of Black Holes in 10 Minutes")
-        context = st.text_area(
+        title = render_text_input("Thumbnail Title", value=st.session_state.get("media_lab_preview").title if st.session_state.get("media_lab_preview") else "The Physics of Black Holes in 10 Minutes")
+        context = render_text_area(
             "Creative Context",
             value="Audience: curious learners. Goal: make the core idea instantly legible and emotionally clickable.",
             height=110,
             key="media_lab_generate_context",
         )
-        style = st.text_area(
+        style = render_text_area(
             "Style Direction",
             value="Bold contrast, one clear subject, cinematic lighting, 16:9 composition, minimal clutter.",
             height=90,
             key="media_lab_generate_style",
         )
-        negative_prompt = st.text_input(
+        negative_prompt = render_text_input(
             "Avoid",
             value="tiny text, low contrast, too many subjects, busy background",
             key="media_lab_generate_negative",

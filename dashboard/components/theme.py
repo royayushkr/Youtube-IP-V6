@@ -2,6 +2,26 @@ from __future__ import annotations
 
 import streamlit as st
 
+from dashboard.components.inputs import SEARCH_INPUT_LABELS
+
+
+def _build_search_input_surface_selectors() -> str:
+    return ",\n".join(
+        f'div[data-baseweb="input"]:has(input[aria-label="{label}"]) > div'
+        for label in SEARCH_INPUT_LABELS
+    )
+
+
+def _build_search_input_inner_selectors() -> str:
+    return ",\n".join(
+        f'div[data-baseweb="input"]:has(input[aria-label="{label}"]) input'
+        for label in SEARCH_INPUT_LABELS
+    )
+
+
+SEARCH_INPUT_SURFACE_SELECTORS = _build_search_input_surface_selectors()
+SEARCH_INPUT_INNER_SELECTORS = _build_search_input_inner_selectors()
+
 
 APP_THEME_CSS = """
 <style>
@@ -28,6 +48,19 @@ APP_THEME_CSS = """
     --app-radius-md: 18px;
     --app-radius-pill: 999px;
     --app-control-height: 46px;
+    --app-input-height: 46px;
+    --app-search-height: 52px;
+    --app-textarea-min-height: 120px;
+    --app-input-radius: 12px;
+    --app-input-pill-radius: 999px;
+    --app-input-padding-x: 0.95rem;
+    --app-input-padding-y: 0.72rem;
+    --app-input-border: #E5E5E5;
+    --app-input-hover-border: #D7D7D7;
+    --app-input-focus-border: #C7C7C7;
+    --app-input-focus-ring: rgba(255, 0, 51, 0.08);
+    --app-input-focus-shadow: 0 0 0 3px rgba(255, 0, 51, 0.08);
+    --app-input-placeholder: #8A8A8A;
     --app-page-width: 1200px;
     --app-command-width: 1000px;
     --app-section-width: 1120px;
@@ -328,32 +361,105 @@ button[kind="secondaryFormSubmit"] {
     box-shadow: none !important;
 }
 
-.stTextInput > div > div > input,
-.stTextArea textarea,
-.stSelectbox > div > div,
-.stDateInput > div > div,
-.stSlider > div > div,
-[data-baseweb="select"] > div,
-[data-baseweb="input"] > div {
-    background-color: #FFFFFF !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--yt-border) !important;
+div[data-testid="stTextInput"] [data-baseweb="input"] > div,
+div[data-testid="stNumberInput"] [data-baseweb="input"] > div,
+div[data-testid="stDateInput"] [data-baseweb="input"] > div,
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div {
+    background: #FFFFFF !important;
+    border-radius: var(--app-input-radius) !important;
+    border: 1px solid var(--app-input-border) !important;
     color: var(--yt-text) !important;
-    min-height: var(--app-control-height) !important;
-    box-shadow: 0 1px 2px rgba(15, 15, 15, 0.04);
+    min-height: var(--app-input-height) !important;
+    padding: 0 var(--app-input-padding-x) !important;
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
 }
 
-.stTextInput > div > div:focus-within,
-.stSelectbox > div > div:focus-within,
-[data-baseweb="select"] > div:focus-within,
-[data-baseweb="input"] > div:focus-within {
-    border-color: var(--yt-red-dark) !important;
-    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.06) !important;
+div[data-testid="stTextArea"] [data-baseweb="textarea"] > div {
+    background: #FFFFFF !important;
+    border-radius: var(--app-input-radius) !important;
+    border: 1px solid var(--app-input-border) !important;
+    color: var(--yt-text) !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
 }
 
-.stTextInput input::placeholder,
-.stTextArea textarea::placeholder {
-    color: var(--yt-text-soft) !important;
+div[data-testid="stTextArea"] [data-baseweb="textarea"] > div {
+    min-height: var(--app-textarea-min-height) !important;
+    padding: var(--app-input-padding-y) var(--app-input-padding-x) !important;
+}
+
+div[data-testid="stTextInput"] [data-baseweb="input"] > div:hover,
+div[data-testid="stNumberInput"] [data-baseweb="input"] > div:hover,
+div[data-testid="stDateInput"] [data-baseweb="input"] > div:hover,
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div:hover,
+div[data-testid="stTextArea"] [data-baseweb="textarea"] > div:hover {
+    border-color: var(--app-input-hover-border) !important;
+    background: #FFFFFF !important;
+}
+
+div[data-testid="stTextInput"] [data-baseweb="input"] > div:focus-within,
+div[data-testid="stNumberInput"] [data-baseweb="input"] > div:focus-within,
+div[data-testid="stDateInput"] [data-baseweb="input"] > div:focus-within,
+div[data-testid="stSelectbox"] [data-baseweb="select"] > div:focus-within,
+div[data-testid="stTextArea"] [data-baseweb="textarea"] > div:focus-within,
+div[data-testid="stTextArea"] textarea:focus {
+    border-color: var(--app-input-focus-border) !important;
+    box-shadow: var(--app-input-focus-shadow) !important;
+}
+
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input,
+div[data-testid="stDateInput"] input,
+div[data-testid="stSelectbox"] input,
+div[data-testid="stSelectbox"] [data-baseweb="select"] span,
+div[data-testid="stTextArea"] textarea {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    color: var(--yt-text) !important;
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+}
+
+div[data-testid="stTextInput"] input,
+div[data-testid="stNumberInput"] input,
+div[data-testid="stDateInput"] input,
+div[data-testid="stSelectbox"] input {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: calc(var(--app-input-height) - 2px) !important;
+}
+
+div[data-testid="stTextArea"] textarea {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: calc(var(--app-textarea-min-height) - (2 * var(--app-input-padding-y))) !important;
+    resize: vertical !important;
+}
+
+div[data-testid="stTextInput"] input::placeholder,
+div[data-testid="stNumberInput"] input::placeholder,
+div[data-testid="stDateInput"] input::placeholder,
+div[data-testid="stSelectbox"] input::placeholder,
+div[data-testid="stTextArea"] textarea::placeholder {
+    color: var(--app-input-placeholder) !important;
+    opacity: 1 !important;
+}
+
+div[data-testid="stTextInput"] [data-baseweb="input"]::before,
+div[data-testid="stTextInput"] [data-baseweb="input"]::after,
+div[data-testid="stNumberInput"] [data-baseweb="input"]::before,
+div[data-testid="stNumberInput"] [data-baseweb="input"]::after,
+div[data-testid="stDateInput"] [data-baseweb="input"]::before,
+div[data-testid="stDateInput"] [data-baseweb="input"]::after,
+div[data-testid="stTextArea"] [data-baseweb="textarea"]::before,
+div[data-testid="stTextArea"] [data-baseweb="textarea"]::after {
+    display: none !important;
+    box-shadow: none !important;
 }
 
 [data-testid="stSegmentedControl"] {
@@ -522,5 +628,35 @@ div[data-testid="stMarkdownContainer"] h3 { color: var(--yt-text); }
 """
 
 
+def _build_search_input_css() -> str:
+    return f"""
+    <style>
+    {SEARCH_INPUT_SURFACE_SELECTORS} {{
+        min-height: var(--app-search-height) !important;
+        border-radius: var(--app-input-pill-radius) !important;
+        padding-left: 1.1rem !important;
+        padding-right: 1.1rem !important;
+    }}
+
+    {SEARCH_INPUT_SURFACE_SELECTORS}:hover {{
+        border-color: var(--app-input-hover-border) !important;
+    }}
+
+    {SEARCH_INPUT_SURFACE_SELECTORS}:focus-within {{
+        border-color: var(--app-input-focus-border) !important;
+        box-shadow: var(--app-input-focus-shadow) !important;
+    }}
+
+    {SEARCH_INPUT_INNER_SELECTORS} {{
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: calc(var(--app-search-height) - 2px) !important;
+        line-height: 1.55 !important;
+    }}
+    </style>
+    """
+
+
 def inject_shared_theme() -> None:
     st.markdown(APP_THEME_CSS, unsafe_allow_html=True)
+    st.markdown(_build_search_input_css(), unsafe_allow_html=True)

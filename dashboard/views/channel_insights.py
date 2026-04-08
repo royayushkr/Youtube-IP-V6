@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterable
 import pandas as pd
 import streamlit as st
 
+from dashboard.components.inputs import render_search_input
 from dashboard.components.visualizations import (
     kpi_row,
     plotly_bar_chart,
@@ -270,7 +271,7 @@ def _render_connect_card(connected_channels: list[dict[str, Any]]) -> None:
             unsafe_allow_html=True,
         )
         with st.form("channel_insights_connect_form"):
-            channel_input = st.text_input(
+            channel_input = render_search_input(
                 "Channel URL, Handle, Or Channel ID",
                 key="channel_insights_input",
                 placeholder="https://www.youtube.com/@veritasium or @veritasium",
