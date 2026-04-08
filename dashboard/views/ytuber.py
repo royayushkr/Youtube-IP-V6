@@ -2961,23 +2961,6 @@ def render() -> None:
         "openai": get_provider_key_count("openai"),
     }
 
-    st.markdown(
-        """
-        <div class="ytuber-hero">
-            <div class="ytuber-brand-row">
-                <span class="ytuber-brand-dot"></span>
-                YouTube IP V6
-            </div>
-            <div class="ytuber-kicker">Live workspace</div>
-            <div class="ytuber-subtitle">
-                Search by handle, name, or channel ID — audits, AI studio, and calendar in one flow.
-            </div>
-            <div class="ytuber-search-meta">Pools reflect configured API keys below.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
     _, search_col, _ = st.columns([1, 3.8, 1])
     with search_col:
         st.markdown(

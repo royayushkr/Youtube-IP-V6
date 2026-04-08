@@ -8,6 +8,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from dashboard.components.layout import render_page_header
+from dashboard.components.intro_animation import inject_intro_animation
 from dashboard.components.sidebar import render_sidebar_footer, render_sidebar_header
 from dashboard.components.theme import inject_shared_theme
 from dashboard.views import channel_analysis, channel_insights, outlier_finder, tools, ytuber
@@ -118,6 +119,7 @@ def run() -> None:
     )
 
     inject_shared_theme()
+    inject_intro_animation()
     _cleanup_retired_session_state()
 
     with st.sidebar:

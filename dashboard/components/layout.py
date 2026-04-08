@@ -1,104 +1,109 @@
-"""Shared shell and layout primitives for the Creator Insights app."""
+"""Shared shell: glass heroes, section headers, and compact shell helpers."""
 
 from __future__ import annotations
 
 from html import escape
-from typing import Dict, Iterable, Sequence, Tuple
+from typing import Dict, Iterable, List, Sequence, Tuple
 
 import streamlit as st
 
 
-PAGE_CONTEXT: Dict[str, Tuple[str, str]] = {
+PAGE_HERO: Dict[str, Tuple[str, str, str, Tuple[str, ...]]] = {
     "Channel Analysis": (
-        "Dataset Intelligence",
-        "Committed CSV benchmarks with filters, engagement views, and chart-backed summaries for fast category reviews.",
+        "Channel Analysis",
+        "Benchmark datasets and see which channels and videos actually move the needle.",
+        "Filter committed CSVs, compare engagement across categories, and surface rankings, trends, and scatter insights without leaving this workspace.",
+        ("CSV benchmarks", "Engagement signals", "Portfolio view"),
     ),
     "Channel Insights": (
-        "Public Channel Depth",
-        "Momentum tracking, topic views, and refresh-to-disk public channel snapshots in one research surface.",
-    ),
-    "Media Lab": (
-        "Creator Utilities",
-        "Transcript extraction, thumbnail workflows, MP4 prep, and MP3 exports in a streamlined single-video workspace.",
-    ),
-    "Outlier Finder": (
-        "Breakout Research",
-        "Quota-aware scans, explainable scoring, compact AI research, and public-video pattern discovery for breakout ideas.",
+        "Channel Insights",
+        "Track public channel snapshots and turn real performance signals into better topic decisions.",
+        "Add a public channel by URL, handle, or channel ID. Channel Insights stores manual snapshots over time, highlights the themes and formats that are working, and turns those signals into grounded next-topic ideas.",
+        ("SQLite snapshots", "Heuristic and BERTopic-ready", "Public API only"),
     ),
     "Ytuber": (
-        "Command Center",
-        "Channel search, audits, AI planning, competitive reads, and creative workflows under one workspace.",
+        "Ytuber",
+        "Your live creator workspace for search, audits, AI studio, and planning.",
+        "Search by handle, name, or channel ID, then move through audits, keyword intel, outliers, title lab, benchmarks, planner, and AI Studio in one continuous flow.",
+        ("YouTube Data API", "Multi-module workspace", "AI Studio"),
+    ),
+    "Outlier Finder": (
+        "Outlier Finder",
+        "Discover breakout videos before the niche catches up.",
+        "Scan any topic, filter the noise, and surface overperforming videos with clear research signals. Review the winners first, understand the pattern next, and layer AI interpretation only after the evidence is visible.",
+        ("Public YouTube data", "Explainable scoring", "Structured AI research"),
+    ),
+    "Media Lab": (
+        "Media Lab",
+        "Inspect public YouTube assets and prepare export-ready downloads.",
+        "Use one streamlined workspace for video lookup, transcript export, thumbnail preview and generation, plus MP4 and MP3 preparation without bringing back old batch or playlist complexity.",
+        ("Single-video workflow", "Transcripts and thumbnails", "MP4 and MP3 prep"),
     ),
     "Deployment": (
-        "Launch Readiness",
-        "Deploy the V6 app to Streamlit Community Cloud with the right repo, secrets, and media dependencies.",
+        "Deployment",
+        "Run locally or ship to Streamlit Cloud with the same entrypoint everywhere.",
+        "Use `streamlit_app.py` as the main file, install from `requirements.txt`, configure secrets, and keep ffmpeg available for Media Lab audio flows.",
+        ("streamlit_app.py", "Secrets ready", "Cloud deploy"),
     ),
 }
 
-PRODUCT_TITLE = "YouTube Creator Insights"
-PRODUCT_SUBTITLE = (
-    "YouTube IP V6 · Purdue University × Google — cross-channel analytics, benchmarking, "
-    "public-channel intelligence, outlier research, and creator-ready media workflows."
-)
 
-SHELL_BADGES: Sequence[str] = (
-    "Creator analytics",
-    "Public YouTube data",
-    "AI-assisted research",
-)
+def render_page_header(page: str, *, centered: bool = True) -> None:
+    """Render the glass hero used across the current V6 shell."""
+    row = PAGE_HERO.get(page)
+    if not row:
+        return
 
+    badge, headline, description, tags = row
+    tags_html = ""
+    if tags:
+        parts: List[str] = []
+        for idx, tag in enumerate(tags):
+            cls = "feature-hero-tag"
+            if idx % 3 == 0:
+                cls += " feature-hero-tag--accent-r"
+            elif idx % 3 == 1:
+                cls += " feature-hero-tag--accent-b"
+            parts.append(f'<span class="{cls}">{escape(tag)}</span>')
+        tags_html = f'<div class="feature-hero-tags">{"".join(parts)}</div>'
 
-def render_card_container(title: str, copy: str, *, eyebrow: str | None = None) -> None:
-    eyebrow_html = (
-        f'<div class="app-shell-card-eyebrow">{escape(eyebrow)}</div>' if eyebrow else ""
-    )
     st.markdown(
         f"""
-        <div class="app-shell-card">
-            {eyebrow_html}
-            <div class="app-shell-card-title">{escape(title)}</div>
-            <div class="app-shell-card-copy">{escape(copy)}</div>
+        <div class="glass-page-hero fade-in">
+            <p class="product-eyebrow">
+                <span class="product-eyebrow-red">YouTube</span> Creator Insights
+                <span class="product-eyebrow-sep">·</span>
+                Purdue × Google
+            </p>
+            <div class="feature-badge">
+                <span class="feature-badge-dot" aria-hidden="true"></span>
+                {escape(badge)}
+            </div>
+            <h1 class="feature-headline">{escape(headline)}</h1>
+            <p class="feature-description">{escape(description)}</p>
+            {tags_html}
         </div>
         """,
         unsafe_allow_html=True,
     )
 
 
-def render_page_header(page: str, *, centered: bool = True) -> None:
-    """Render the global product header plus page-specific context."""
-    context = PAGE_CONTEXT.get(page)
-    align_class = "app-shell-header centered" if centered else "app-shell-header"
-    badges = "".join(
-        f'<span class="app-shell-badge">{escape(badge)}</span>' for badge in SHELL_BADGES
-    )
-    context_html = ""
-    if context:
-        eyebrow, copy = context
-        context_html = f"""
-        <div class="app-shell-context-card">
-            <div class="app-shell-context-eyebrow">{escape(eyebrow)}</div>
-            <div class="app-shell-context-copy">{escape(copy)}</div>
-        </div>
-        """
-
+def render_card_container(title: str, copy: str, *, eyebrow: str | None = None) -> None:
+    eyebrow_html = f'<div class="app-hero-kicker">{escape(eyebrow)}</div>' if eyebrow else ""
     st.markdown(
         f"""
-        <section class="{align_class}">
-            <div class="app-shell-kicker">Purdue × Google Capstone Product</div>
-            <h1 class="app-shell-title">{PRODUCT_TITLE}</h1>
-            <p class="app-shell-subtitle">{escape(PRODUCT_SUBTITLE)}</p>
-            <div class="app-shell-badge-row">{badges}</div>
-            {context_html}
-        </section>
+        <div class="yt-card fade-in">
+            {eyebrow_html}
+            <div class="app-section-title">{escape(title)}</div>
+            <p class="app-section-copy">{escape(copy)}</p>
+        </div>
         """,
         unsafe_allow_html=True,
     )
 
 
 def render_section_header(title: str, subtitle: str | None = None) -> None:
-    subtitle_html = (
-        f'<p class="app-section-copy">{escape(subtitle)}</p>' if subtitle else ""
-    )
+    subtitle_html = f'<p class="app-section-copy">{escape(subtitle)}</p>' if subtitle else ""
     st.markdown(
         f"""
         <div class="app-section-shell">
@@ -112,7 +117,9 @@ def render_section_header(title: str, subtitle: str | None = None) -> None:
 
 def render_chip_row(items: Iterable[str]) -> None:
     chips = "".join(
-        f'<span class="app-inline-chip">{escape(str(item))}</span>' for item in items if str(item)
+        f'<span class="app-meta-pill">{escape(str(item))}</span>'
+        for item in items
+        if str(item)
     )
     if chips:
         st.markdown(f'<div class="app-inline-chip-row">{chips}</div>', unsafe_allow_html=True)

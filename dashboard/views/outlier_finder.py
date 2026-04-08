@@ -112,28 +112,6 @@ def _inject_outlier_css() -> None:
             min-height: auto;
             padding: 0;
         }
-        [data-testid="stExpander"] {
-            border: 1px solid var(--yt-border) !important;
-            border-radius: 14px !important;
-            background: #FFFFFF !important;
-            margin-top: 0.15rem;
-            box-shadow: none !important;
-        }
-        [data-testid="stExpander"] details {
-            border-radius: 14px !important;
-            background: #FFFFFF !important;
-        }
-        [data-testid="stExpander"] summary {
-            padding: 0.15rem 0.25rem !important;
-        }
-        [data-testid="stExpander"] summary p {
-            color: #0F0F0F !important;
-            font-size: 14px !important;
-            font-weight: 700 !important;
-        }
-        [data-testid="stExpander"] summary:hover {
-            background: #F2F2F2 !important;
-        }
         .outlier-page {
             max-width: var(--app-page-width);
             margin: 0 auto;
@@ -1236,21 +1214,6 @@ def render() -> None:
         "gemini": get_provider_key_count("gemini"),
         "openai": get_provider_key_count("openai"),
     }
-
-    st.markdown(
-        (
-            '<div class="outlier-hero">'
-            '<div class="outlier-kicker"><span class="outlier-kicker-dot"></span>Live scan</div>'
-            '<div class="outlier-trust-row">'
-            '<span class="outlier-pill">Public YouTube API Data</span>'
-            '<span class="outlier-pill">Explainable Outlier Scoring</span>'
-            '<span class="outlier-pill">Quota-Aware Query Caching</span>'
-            '<span class="outlier-pill">Structured AI Research</span>'
-            '</div>'
-            '</div>'
-        ),
-        unsafe_allow_html=True,
-    )
 
     prefill_note = st.session_state.pop("outlier_page_prefill_note", None)
     if prefill_note:

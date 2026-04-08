@@ -240,19 +240,7 @@ def _artifact_status_label(state: str) -> str:
 
 
 def _render_hero() -> None:
-    st.markdown(
-        """
-        <div class="channel-insights-page">
-            <div class="ci-hero">
-                <div class="ci-kicker"><span class="ci-kicker-dot"></span>Snapshot workflow</div>
-                <div class="ci-subtitle">
-                    Public channels only — refresh to save dated SQLite snapshots, topic views, and next-topic ideas.
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    return
 
 
 def _render_connect_card(connected_channels: list[dict[str, Any]]) -> None:

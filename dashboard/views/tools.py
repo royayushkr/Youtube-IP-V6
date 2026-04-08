@@ -426,27 +426,7 @@ def _render_artifact_panel(title: str, copy: str, artifact: PreparedArtifact | P
 
 
 def _render_hero() -> None:
-    st.markdown(
-        """
-        <div class="media-lab-page">
-            <div class="media-lab-hero">
-                <div class="media-lab-kicker"><span class="media-lab-kicker-dot"></span>Media Lab</div>
-                <div class="media-lab-title">One clean workspace for transcripts, thumbnails, video, and audio.</div>
-                <div class="media-lab-subtitle">
-                    Start from one public YouTube video or Short, then extract captions, preview multi-resolution thumbnails,
-                    generate new thumbnail concepts, and prepare MP4 or MP3 downloads with clear progress and friendlier errors.
-                </div>
-                <div class="media-lab-pill-row">
-                    <span class="media-lab-pill">Single public video workflow</span>
-                    <span class="media-lab-pill">Transcript + thumbnail + media downloads</span>
-                    <span class="media-lab-pill">Temporary artifacts only</span>
-                    <span class="media-lab-pill">Streamlit + yt-dlp ready</span>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    return
 
 
 def _render_summary_cards(preview: VideoMetadata | None, formats: dict[str, list[FormatOption]] | None, transcripts: list[TranscriptOption] | None) -> None:

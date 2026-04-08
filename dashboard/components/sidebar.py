@@ -6,9 +6,9 @@ import streamlit as st
 PAGE_OPTIONS = [
     "Channel Analysis",
     "Channel Insights",
-    "Media Lab",
-    "Outlier Finder",
     "Ytuber",
+    "Outlier Finder",
+    "Media Lab",
     "Deployment",
 ]
 
@@ -27,39 +27,51 @@ def _normalize_page_name(value: str) -> str:
 
 
 def render_sidebar_header() -> None:
-    """Product-grade sidebar header above Streamlit navigation."""
+    """Premium glass masthead adapted from Debadri's origin/main shell."""
     st.markdown(
         """
-        <div class="app-sidebar-shell">
-            <div class="app-sidebar-brand">
-                <div class="app-sidebar-brand-mark">▶</div>
-                <div>
-                    <div class="app-sidebar-brand-title">Creator Insights</div>
-                    <div class="app-sidebar-brand-copy">YouTube IP V6 · Purdue × Google</div>
+        <div class="sidebar-brand-mast">
+            <div class="sidebar-brand-emblem" aria-hidden="true">
+                <div class="sidebar-brand-emblem-head">
+                    <div class="sidebar-brand-emblem-eye"></div>
+                    <div class="sidebar-brand-emblem-eye"></div>
+                </div>
+                <div class="sidebar-brand-emblem-smile"></div>
+            </div>
+            <div class="sidebar-brand-row">
+                <div class="sidebar-brand-bar-col">
+                    <div class="sidebar-brand-bar"></div>
+                </div>
+                <div class="sidebar-brand-copy">
+                    <div class="sidebar-brand-yt">
+                        <span class="sidebar-brand-yt-gradient">Creator</span>
+                    </div>
+                    <div class="sidebar-brand-ci">YouTube Insights</div>
+                    <div class="sidebar-brand-line" aria-hidden="true"></div>
+                    <div class="sidebar-brand-sub">Purdue × Google · V6</div>
                 </div>
             </div>
-            <div class="app-sidebar-helper">Native navigation stays visible across deployment, narrower screens, and reruns.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    st.markdown('<div class="sidebar-nav-label">Navigate</div>', unsafe_allow_html=True)
+
 
 def render_sidebar_footer() -> None:
-    """Helpful deployment notes beneath the navigation."""
+    """Attribution and deployment hint below navigation."""
+    st.markdown(
+        "<hr style='border-color:rgba(0,0,0,0.1);margin:0.55rem 0 0.65rem;' />",
+        unsafe_allow_html=True,
+    )
+
     st.markdown(
         """
-        <div class="app-sidebar-footer">
-            <div class="app-sidebar-footer-title">Deployment Notes</div>
-            <div class="app-sidebar-footer-copy">
-                Configure <code>YOUTUBE_API_KEYS</code>, <code>GEMINI_API_KEYS</code>, and
-                <code>OPENAI_API_KEYS</code> in Streamlit secrets or your local <code>.env</code>.
-            </div>
-            <div class="app-sidebar-footer-meta">
-                <strong>Purdue University × Google</strong><br/>
-                Daniels School of Business — MS BAIM Capstone<br/>
-                <span>Repo: royayushkr/Youtube-IP-V6</span>
-            </div>
+        <div style="font-size:10px;color:#86868b;line-height:1.45;">
+            <strong style="color:#1d1d1f;">Purdue University × Google</strong><br/>
+            Daniels School of Business — MS BAIM Capstone<br/>
+            <span style="opacity:0.92;">Media Lab, Outlier Finder, Ytuber, and public channel research.</span>
         </div>
         """,
         unsafe_allow_html=True,

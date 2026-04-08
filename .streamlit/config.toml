@@ -2,7 +2,7 @@
 enableStaticServing = true
 
 [client]
-toolbarMode = "minimal"
+toolbarMode = "auto"
 
 [[theme.fontFaces]]
 family = "DMSans"
@@ -43,11 +43,11 @@ weight = 500
 [theme]
 base = "light"
 primaryColor = "#FF0033"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F9FAFB"
-textColor = "#111827"
-linkColor = "#E11D48"
-borderColor = "#E5E7EB"
+backgroundColor = "#F5F5F7"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#111216"
+linkColor = "#0071E3"
+borderColor = "#D1D5DB"
 showWidgetBorder = true
 baseRadius = "0.75rem"
 font = "DMSans"
